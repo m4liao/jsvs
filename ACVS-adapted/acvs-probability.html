@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <script src="jatos.js"></script>
+  <script src="jspsych/jspsych.js"></script>
+  <script src="jspsych/plugins/jspsych-html-keyboard-response.js"></script>
+  <script src="jspsych/plugins/jspsych-fullscreen.js"></script>
+  <script src="jsPsych/plugins/jspsych-html-slider-response.js"></script>
+  <script src="jsPsych/plugins/jspsych-html-button-response.js"></script>
+  <script src="jsPsych/plugins/jspsych-survey-text.js"></script>
+  <script src="jsPsych/plugins/jspsych-survey-multi-choice.js"></script>
+  <script src="jsPsych/plugins/jspsych-survey-multi-select.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.11.1/themes/smoothness/jquery-ui.css">
+  <link rel="stylesheet" href="jspsych/css/jspsych.css">
+  <script>
+    // CHANGE EXPERIMENT PARAMETERS //
+    // configs that have been done: (red, 0), (red, 2)
+    const optimalColor = 'red';
+    const optimalQuadrant = 1;
+    const nonOptimalQuadrant = [0, 2, 3];
+    const quadrants = [0, 1, 2, 3];
+
+    //////////////////////////////////
+    let creditToken = '';
+    let surveyCode = '';
+
+    function shuffle(array) {
+      let newArray = [...array];
+      var currentIndex = newArray.length, temporaryValue, randomIndex;
+
+      // While there remain elements to shuffle...
+      while (0 !== currentIndex) {
+
+        // Pick a remaining element...
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex -= 1;
+
+        // And swap it with the current element.
+        temporaryValue = newArray[currentIndex];
+        newArray[currentIndex] = newArray[randomIndex];
+        newArray[randomIndex] = temporaryValue;
+      }
+
+      return newArray;
+    }
+
+    // Location Information
+    let locations = [];
+    let numTargets = 54;
+    let targetDimensions = 30;
+    let numTargetsRing1 = 12;
+    let numTargetsRing2 = 18;
+    let numTargetsRing3 = 24;
+    let containerWidth = 800;
+    let containerHeight = 800;
+    let windowHeight = window.innerHeight;
+    let windowWidth = window.innerWidth;
+
+    // Testing information
+    let numTrials = 20;
+    let numTrialsPerBlock = 20;
+    let numBlock = numTrials / numTrialsPerBlock;
+
+    for (let i = 0; i < numTargets; i++) {
+      let xCord;
+      let yCord;
+      if (i < numTargetsRing1) {
+        xCord = Math.cos(i * (2 * Math.PI / numTargetsRing1)) * 190 + (containerWidth - targetDimensions) / 2;
+        yCord = Math.sin(i * (2 * Math.PI / numTargetsRing1)) * 190 + (containerHeight - targetDimensions) / 2;
+      } else if (i >= numTargetsRing1 && i < numTargetsRing1 + numTargetsRing2) {
+        xCord = Math.cos((i - numTargetsRing1) * (2 * Math.PI / numTargetsRing2)) * 270 + (containerWidth - targetDimensions) / 2;
+        yCord = Math.sin((i - numTargetsRing1) * (2 * Math.PI / numTargetsRing2)) * 270 + (containerHeight - targetDimensions) / 2;
+      } else {
+        xCord = Math.cos((i - numTargetsRing1 - numTargetsRing2) * (2 * Math.PI / numTargetsRing3)) * 350 + (containerWidth - targetDimensions) / 2;
+        yCord = Math.sin((i - numTargetsRing1 - numTargetsRing2) * (2 * Math.PI / numTargetsRing3)) * 350 + (containerHeight - targetDimensions) / 2;
+      }
+      locations.push([(xCord), (yCord)]);
+    }
+
+    let targetIdentity = [
+      [2, 3],
+      [2, 4],
+      [2, 5],
+      [3, 2],
+      [3, 4],
+      [3, 5],
+      [4, 2],
+      [4, 3],
+      [4, 5],
+      [5, 2],
+      [5, 3],
+      [5, 4]
+    ];
+
+    ////////////////////////////////////
+    // Create containers to hold conditions
+    let conditionLog = Array(numTrials).fill().map(() => Array(numTargets).fill());
+    let colorLog = Array(numTrials).fill().map(() => Array(numTargets).fill());
+    let trialConditions = [];
+    let conditionColors = [];
+
+    // Create target conditions (can be counterbalanced across entire experiment)
+    let conditionTargetIdentity = [];
+    for (let i = 0; i < numTrials; i++) {
+      conditionTargetIdentity = conditionTargetIdentity.concat(shuffle(targetIdentity));
+    }
+
+    // Create log to record correct keypress responses
+    let keyPressLog = [];
+    for (let i = 0; i < numTrials; i++) {
+      let newArr = [];
+      for (let j = 0; j < 2; j++) {
+        if (conditionTargetIdentity[i][j] == 2) {
+          newArr.push(90);
+        } else if (conditionTargetIdentity[i][j] == 3) {
+          newArr.push(88);
+        } else if (conditionTargetIdentity[i][j] == 4) {
+          newArr.push(78);
+        } else {
+          newArr.push(77);
+        }
+      }
+      keyPressLog.push(newArr);
+    }
+
+    // Create color combination (has to be counterbalanced per block)
+    let colorCombination = [
+      [12, 26],
+      [26, 12]
+    ];
+
+    // Declare which positions are in each quadrant
+    let quadrant0 = [10, 11, 26, 27, 28, 29, 49, 50, 51, 52, 53];
+    let quadrant1 = [7, 8, 22, 23, 24, 25, 43, 44, 45, 46, 47];
+    let quadrant2 = [4, 5, 17, 18, 19, 20, 37, 38, 39, 40, 41];
+    let quadrant3 = [1, 2, 13, 14, 15, 16, 31, 32, 33, 34, 35];
+
+    let locationConditions = [];
+
+    // Create conditions per block
+    for (let indexBlock = 0; indexBlock < numBlock; indexBlock++) {
+
+      // Create conditions for red/blue optimal (12, 26 or 26, 12)
+      let conditionColorsBlock = [];
+      for (let i = 0; i < numTrialsPerBlock / colorCombination.length; i++) {
+        conditionColorsBlock = conditionColorsBlock.concat(shuffle(colorCombination));
+      }
+      conditionColorsBlock = shuffle(conditionColorsBlock);
+      conditionColors = conditionColors.concat(conditionColorsBlock);
+
+      // Create conditions for distractor colors
+      let distractorColors = [];
+      for (let i = 0; i < numTrialsPerBlock; i++) {
+        let newArr = [];
+        for (let j = 0; j < conditionColors[i][0]; j++) {
+          newArr.push('red');
+        }
+        for (let j = 0; j < conditionColors[i][1]; j++) {
+          newArr.push('blue');
+        }
+        for (let j = 0; j < 14; j++) {
+          newArr.push('green');
+        }
+        distractorColors.push(shuffle(newArr));
+      }
+
+    function GFG_FUN() {
+      down.innerHTML = arr[Math.floor(Math.random() * arr.length)];
+    }
+
+      // Shuffle location of targets
+      let locationsList = [];
+      let locationControl = [];
+      let conditionOptimal = [];
+      let conditionNonOptimal = [];
+      for (let i = 0; i < numTrials; i++) {
+        conditionOptimal = shuffle(quadrants)[1];
+        conditionNonOptimal = shuffle(quadrants)[1];
+        if (optimalColor == 'red'){
+          locationControl.push([conditionOptimal, conditionNonOptimal]);
+          locationControl.push([conditionNonOptimal, conditionOptimal]);
+        }
+      }
+      locationControl = shuffle(locationControl);
+
+      locationConditions = locationConditions.concat(locationControl);
+
+      console.log(locationControl);
+
+       // Add location conditions per quadrant
+      for (let i = 0; i < numTrialsPerBlock; i++) {
+       let masterCount = indexBlock * numTrialsPerBlock + i;
+
+        let blockLocations = [];
+        let q0 = shuffle(quadrant0);
+        let q1 = shuffle(quadrant1);
+        let q2 = shuffle(quadrant2);
+        let q3 = shuffle(quadrant3);
+
+        let temp = [];
+        if (locationControl[i][0] === locationControl[i][1]) {
+          if (locationControl[i][0] === 0) {
+            temp.push(q0.splice(0, 1)[0], q0.splice(1, 1)[0]);
+          } else if (locationControl[i][0] === 1) {
+            temp.push(q1.splice(0, 1)[0], q1.splice(1, 1)[0]);
+          } else if (locationControl[i][0] === 2) {
+            temp.push(q2.splice(0, 1)[0], q2.splice(1, 1)[0]);
+          } else {
+            temp.push(q3.splice(0, 1)[0], q3.splice(1, 1)[0]);
+          }
+        } else {
+          for (let j = 0; j < 2; j++) {
+            if (locationControl[i][j] === 0) {
+              temp.push(q0.splice(0, 1)[0]);
+            } else if (locationControl[i][j] === 1) {
+              temp.push(q1.splice(0, 1)[0]);
+            } else if (locationControl[i][j] === 2) {
+              temp.push(q2.splice(0, 1)[0]);
+            } else {
+              temp.push(q3.splice(0, 1)[0]);
+            }
+          }
+        }
+        blockLocations.push(temp[0], temp[1]);
+
+        let distractorIndex = 0;
+        let indexR = 0;
+        let indexB = 0;
+        let indexG = 0;
+        let identityLogR = [];
+        let identityLogB = [];
+        let identityLogG = [];
+        let cycleR = Math.ceil(conditionColors[i][0] / 4);
+        let cycleB = Math.ceil(conditionColors[i][1] / 4);
+        for (let j = 0; j < cycleR; j++) {
+          identityLogR.push(6, 7, 8, 9);
+        }
+        identityLogR = shuffle([...identityLogR]);
+        for (let j = 0; j < cycleB; j++) {
+          identityLogB.push(6, 7, 8, 9);
+        }
+        identityLogB = shuffle([...identityLogB]);
+        for (let j = 0; j < 2; j++) {
+          identityLogG.push(2, 3, 4, 5, 6, 7, 8, 9);
+        }
+        identityLogG = shuffle([...identityLogG]);
+
+        // Cycle through positions
+        for (let j = 0; j < numTargets; j++) {
+          if (blockLocations.includes(j)) {
+            let index = blockLocations.indexOf(j);
+            // Color of TARGET
+            if (index == 0) {
+              colorLog[i][blockLocations[index]] = 'red';
+            } else if (index == 1) {
+              colorLog[i][blockLocations[index]] = 'blue';
+            }
+
+            // Identity of TARGET
+            conditionLog[i][blockLocations[index]] = conditionTargetIdentity[masterCount][index];
+
+          } else {
+            // Color of DISTRACTOR
+            colorLog[i][j] = distractorColors[i][distractorIndex];
+
+            // Identity of DISTRACTOR
+            if (colorLog[i][j] === "green") {
+              conditionLog[i][j] = identityLogG[indexG];
+              indexG++
+            } else if (colorLog[i][j] === "red") {
+              conditionLog[i][j] = identityLogR[indexR];
+              indexR++
+            } else if (colorLog[i][j] === "blue") {
+              conditionLog[i][j] = identityLogB[indexB];
+              indexB++
+            }
+            distractorIndex++
+          }
+        }
+      }
+
+      // Generate html for each condition
+      for (let i = 0; i < numTrialsPerBlock; i++) {
+        let divContainer;
+        divContainer = `<div style="position: relative; width: ${containerWidth}px; height: ${containerHeight}px; background-color: black; " id="container">`;
+        for (let j = 0; j < numTargets; j++) {
+          divContainer += '<div style="'
+          divContainer += 'position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;'
+
+          // Check color
+          if (colorLog[i][j] === 'red') {
+            divContainer += 'background-color:red; '
+          } else if (colorLog[i][j] === 'blue') {
+            divContainer += 'background-color:blue; '
+          } else {
+            divContainer += 'background-color:green; '
+          }
+          divContainer += `left:${locations[j][0]}px; `
+          divContainer += `top:${locations[j][1]}px; `
+          divContainer += '">'
+
+          // Check identity
+          divContainer += `${conditionLog[i][j]}`
+          divContainer += '</div>'
+        }
+        divContainer += '</div>'
+        trialConditions.push(divContainer);
+      }
+    }
+    ////////////////////////////////////
+
+    // Add break parameters
+    let breakStart = {
+      type: 'html-keyboard-response',
+      stimulus: '<p>Take a short break.</p>' +
+        '<p>Testing will resume in 30 seconds.</p>' +
+        '<p>Press any key to resume early.</p>',
+      trial_duration: 30000
+    };
+
+    let breakEnd = {
+      type: 'html-keyboard-response',
+      stimulus: 'Testing will resume in 2 seconds, get ready!',
+      choices: jsPsych.NO_KEYS,
+      trial_duration: 2000
+    };
+
+    // Create training conditions
+    const randomSelect = (arr, num = 1) => {
+      const res = [];
+      for (let i = 0; i < num;) {
+        const random = Math.floor(Math.random() * arr.length);
+        if (res.indexOf(arr[random]) !== -1) {
+          continue
+        }
+        res.push(arr[random]);
+        i++
+      }
+      return res
+    }
+
+    let allPossible = [];
+    for (i = 0; i < numTrials; i++) {
+      allPossible.push(i);
+    }
+
+    let randomlySelectedArray = randomSelect(allPossible, 16);
+    let trialConditionsTrain = [];
+    let keyPressLogTrain = [];
+    for (i = 0; i < randomlySelectedArray.length; i++) {
+      trialConditionsTrain.push(trialConditions[i]);
+      keyPressLogTrain.push(keyPressLog[i]);
+    };
+
+    ////////////////////////////////////
+    // Create containers to hold conditions
+    let numTrialsPost = 16;
+    let conditionLogPost = Array(numTrialsPost).fill().map(() => Array(numTargets).fill());
+    let colorLogPost = Array(numTrialsPost).fill().map(() => Array(numTargets).fill());
+    let trialConditionsPost = [];
+    let conditionColorsPost = [];
+
+    // Create color combination (has to be counterbalanced per block)
+    let colorCombinationPost = [
+      [12, 26],
+      [26, 12]
+    ];
+
+    // Create conditions for red/blue optimal
+    for (let i = 0; i < numTrialsPost / 2; i++) {
+      conditionColorsPost = conditionColorsPost.concat(colorCombinationPost);
+    }
+    conditionColorsPost = shuffle(conditionColorsPost);
+
+    // Create conditions for distractor colors
+    let distractorColorsPost = [];
+    for (let i = 0; i < numTrialsPost; i++) {
+      let newArr = [];
+      for (let j = 0; j < conditionColorsPost[i][0]; j++) {
+        newArr.push('red');
+      }
+      for (let j = 0; j < conditionColorsPost[i][1]; j++) {
+        newArr.push('blue');
+      }
+      for (let j = 0; j < (numTargets - conditionColorsPost[i][0] - conditionColorsPost[i][1]); j++) {
+        newArr.push('green');
+      }
+      distractorColorsPost.push(shuffle(newArr));
+    }
+
+    // Create location conditions per block
+    let locationsListPost = [];
+    let locationControlPost = [];
+    for (let i = 0; i < numTrialsPost; i++) {
+      let conditionOptimal;
+      let conditionNonOptimal;
+      if (i < 0.1 * numTrialsPost) {
+        conditionOptimal = 3
+      } else if (i < 0.2 * numTrialsPost) {
+        conditionOptimal = 2
+      } else if (i < 0.3 * numTrialsPost) {
+        conditionOptimal = 1
+      } else {
+        conditionOptimal = 0
+      }
+      if (i < 0.25 * numTrialsPost) {
+        conditionNonOptimal = 3
+      } else if (i < 0.5 * numTrialsPost) {
+        conditionNonOptimal = 2
+      } else if (i < 0.75 * numTrialsPost) {
+        conditionNonOptimal = 1
+      } else {
+        conditionNonOptimal = 0
+      }
+      locationControlPost.push([conditionOptimal, conditionNonOptimal]);
+    }
+    locationControlPost = shuffle(locationControlPost);
+
+    // Add location conditions per quadrant
+    for (let i = 0; i < numTrialsPost; i++) {
+      let blockLocations = [];
+      let q0 = shuffle(quadrant0);
+      let q1 = shuffle(quadrant1);
+      let q2 = shuffle(quadrant2);
+      let q3 = shuffle(quadrant3);
+
+      let temp = [];
+      if (locationControlPost[i][0] === locationControlPost[i][1]) {
+        if (locationControlPost[i][0] === 0) {
+          temp.push(q0.splice(0, 1)[0], q0.splice(1, 1)[0]);
+        } else if (locationControlPost[i][0] === 1) {
+          temp.push(q1.splice(0, 1)[0], q1.splice(1, 1)[0]);
+        } else if (locationControlPost[i][0] === 2) {
+          temp.push(q2.splice(0, 1)[0], q2.splice(1, 1)[0]);
+        } else {
+          temp.push(q3.splice(0, 1)[0], q3.splice(1, 1)[0]);
+        }
+      } else {
+        for (let j = 0; j < 2; j++) {
+          if (locationControlPost[i][j] === 0) {
+            temp.push(q0.splice(0, 1)[0]);
+          } else if (locationControlPost[i][j] === 1) {
+            temp.push(q1.splice(0, 1)[0]);
+          } else if (locationControlPost[i][j] === 2) {
+            temp.push(q2.splice(0, 1)[0]);
+          } else {
+            temp.push(q3.splice(0, 1)[0]);
+          }
+        }
+      }
+      blockLocations.push(temp[0], temp[1]);
+
+      let distractorIndex = 0;
+      let indexR = 0;
+      let indexB = 0;
+      let indexG = 0;
+      let identityLogR = [];
+      let identityLogB = [];
+      let identityLogG = [];
+      let cycleR = Math.ceil(conditionColorsPost[i][0] / 4);
+      let cycleB = Math.ceil(conditionColorsPost[i][1] / 4);
+      for (let j = 0; j < cycleR; j++) {
+        identityLogR.push(6, 7, 8, 9);
+      }
+      identityLogR = shuffle([...identityLogR]);
+      for (let j = 0; j < cycleB; j++) {
+        identityLogB.push(6, 7, 8, 9);
+      }
+      identityLogB = shuffle([...identityLogB]);
+      for (let j = 0; j < 2; j++) {
+        identityLogG.push(2, 3, 4, 5, 6, 7, 8, 9);
+      }
+      identityLogG = shuffle([...identityLogG]);
+
+      // Cycle through positions
+      for (let j = 0; j < numTargets; j++) {
+        if (blockLocations.includes(j)) {
+          let index = blockLocations.indexOf(j);
+          // Color of TARGET
+          if (index == 0) {
+            colorLogPost[i][blockLocations[index]] = 'red';
+          } else if (index == 1) {
+            colorLogPost[i][blockLocations[index]] = 'blue';
+          }
+
+        } else {
+          // Color of DISTRACTOR
+          colorLogPost[i][j] = distractorColorsPost[i][distractorIndex];
+          distractorIndex++
+        }
+      }
+    }
+
+    // Generate html for each condition
+    for (let i = 0; i < numTrialsPost; i++) {
+      let divContainer;
+      divContainer = `<div style="position: relative; width: ${containerWidth}px; height: ${containerHeight}px; background-color: black; " id="container">`;
+      for (let j = 0; j < numTargets; j++) {
+        if (conditionColorsPost[i][0] === 26) {
+          if (colorLogPost[i][j] == 'red') {
+            divContainer += '<div class="hover" style="'
+          } else {
+            divContainer += '<div style="'
+          }
+        } else {
+          if (colorLogPost[i][j] == 'blue') {
+            divContainer += '<div class="hover" style="'
+          } else {
+            divContainer += '<div style="'
+          }
+        }
+        divContainer += 'position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;'
+
+        // Check color
+        if (colorLogPost[i][j] === 'red') {
+          divContainer += 'background-color:red; '
+        } else if (colorLogPost[i][j] === 'blue') {
+          divContainer += 'background-color:blue; '
+        } else {
+          divContainer += 'background-color:green; '
+        }
+        divContainer += `left:${locations[j][0]}px; `
+        divContainer += `top:${locations[j][1]}px; `
+        divContainer += '">'
+
+        divContainer += '</div>'
+      }
+
+      // ADD INSTRUCTIONS
+      if (conditionColorsPost[i][0] == 12) {
+        divContainer += '<div style="position:absolute; width:300px; height:40px; top:360px; left: 250px;">Click the square you think the <b>blue</b> target is on.</div>' +
+          '</div>'
+      } else if (conditionColorsPost[i][0] == 26) {
+        divContainer += '<div style="position:absolute; width:300px; height:40px; top:360px; left: 250px;">Click the square you think the <b>red</b> target is on.</div>' +
+          '</div>'
+      } else {
+
+      }
+      divContainer += '</div>'
+      trialConditionsPost.push(divContainer);
+    }
+
+    // Function to get quadrant
+    function getQuadrant(mouseX, mouseY) {
+      if (mouseX >= windowWidth / 2 && mouseY >= windowHeight / 2) {
+        return 4
+      } else if (mouseX >= windowWidth / 2) {
+        return 1
+      } else if (mouseY >= windowHeight / 2) {
+        return 3
+      } else {
+        return 2
+      }
+    }
+
+    // Function to scale html shown in each instance
+    function generateScaledHTML(htmlToBeWrapped) {
+      let windowHeight = window.innerHeight;
+      let result = `<div style="position: relative; transform: scale(${(windowHeight / 800)}, ${(windowHeight / 800)}); background-color: black; ">` + htmlToBeWrapped + '</div>';
+      return result
+    }
+
+    // Function to scale html shown in each instance w/ obfuscator
+    function generateScaledHTMLwObfuscator(htmlToBeWrapped) {
+      let windowHeight = window.innerHeight;
+      let result = `<div style="position: relative; transform: scale(${(windowHeight / 800)}, ${(windowHeight / 800)}); background-color: black; ">` + htmlToBeWrapped + '</div>';
+      
+      /* position: relative; width: ${windowWidth}px; height: ${windowHeight}px; background-color: white; */
+
+      result += `<div id="obfuscator" style="
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: black;
+        "></div>`
+
+      result += '</div></div>'
+
+      return result
+    }
+
+    ////////////////////////////////////
+  </script>
+</head>
+
+<body>
+  <script>
+    ////////////////////////////////////
+    // Initialize timeline containers 
+    let timeline = [];
+    let timelineInstructions = [];
+    let timelineTraining = [];
+    let timelineTest = [];
+    let timelinePost = [];
+    ////////////////////////////////////
+
+    ////////////////////////////////////
+    // Create instructions 
+    timelineInstructions.push({
+      type: 'html-button-response',
+      choices: ['AGREE TO PARTICIPATE', 'DECLINE TO PARTICIPATE'],
+      stimulus: '<p style="font-size: 30px; color:#f0e68c;">PLEASE READ ALL OF THE FOLLOWING</p>' +
+        '<div style="position: relative; margin: auto; width: 1000px; height: 600px; background-color:black; overflow: scroll;text-align: left;">' +
+        '<p>This is a study conducted by Brian A. Anderson, PhD, a researcher from Texas A&M University and his research staff. The information in this form is provided to help you decide whether or not to take part. If you decide you do not want to participate, there will be no penalty to you, and you will not lose any benefits you normally would have.</p>' +
+        '<p></p>' +
+        '<p style="color:#f0e68c;">Why is this study being done?</p>' +
+        '<p>The purpose of this study is to understand how you perceive sensory information such as visual images and sounds.</p>' +
+        '<p></p>' +
+        '<p style="color:#f0e68c;">Am I eligible to participate?</p>' +
+        '<p>To be eligible to participate in this study, you must fulfill the following inclusion criteria. If you do not fulfil these criteria, please decline to participate:</p>' +
+        '<p>You are between the ages of 18 and 35, inclusive</p>' +
+        '<p>You speak English</p>' +
+        '<p>You have normal or corrected-to-normal (glasses or contacts) visual acuity</p>' +
+        '<p>You have normal color vision</p>' +
+        '<p></p>' +
+        '<p style="color:#f0e68c;">How many people will be asked to be in this study?</p>' +
+        '<p>Approximately 4,000 people (participants) will participate in this study.</p>' +
+        '<p></p>' +
+        '<p style="color:#f0e68c;">What are the alternatives to being in this study?</p>' +
+        '<p>The alternative to being in the study is not to participate.</p>' +
+        '<p></p>' +
+        '<p style="color:#f0e68c;">What will I be asked to do in this study?</p>' +
+        '<p>In this study, you will perform a computer task (like a very simplified video game). In this computer task, different objects will be presented on your computer screen. You will be asked to press buttons on your keyboard to identify particular objects while doing your best to ignore other objects. You may also be asked to fill out some surveys that gather information about how you act, think, and feel in different situations. The study involves a single session lasting approximately 1 hr.</p>' +
+        '<p></p>' +
+        '<p style="color:#f0e68c;">Are there any risks to me?</p>' +
+        '<p>The things that you will be doing are of no more risk than you would come across in everyday life. The computer tasks and surveys we will ask you to complete are sometimes boring. You may feel fatigued from completing the surveys or computer task, and you may experience dryness of the eyes from looking at images on a computer screen for up to 1 hour. To minimize this, we provide breaks in which you may rest your eyes, and you will be able to complete the questionnaires at your own pace. You will be assigned a code should you agree to participate, and the study code will be the only identifying information used for the study documents. Only the investigators will have access to the study information. Although the researchers have tried to avoid risks, you may feel that some questions/procedures that are asked of you will be stressful or upsetting. You do not have to answer anything you do not want to.</p>' +
+        '<p></p>' +
+        '<p style="color:#f0e68c;">Will there be any costs to me?</p>' +
+        '<p>Aside from your time, there are no costs for taking part in the study.</p>' +
+        '<p></p>' +
+        '<p style="color:#f0e68c;">Will I be compensated for my time?</p>' +
+        '<p>Research credit will be awarded at a rate of 1 credit per half-hour of time participated.</p>' +
+        '<p></p>' +
+        '<p style="color:#f0e68c;">Will information from this study be kept private?</p>' +
+        '<p>The records of this study will be kept private. Your identity will not be linked to the information you provide as a part of your participation.</p>' +
+        '<p></p>' +
+        '<p style="color:#f0e68c;">Who may I contact for more information?</p>' +
+        '<p>You may contact the Principal Investigator, Brian A. Anderson, PhD, to tell him about a concern or complaint about this research at 979-458-0168 or brian.anderson@tamu.edu. For questions about your rights as a research participant, to provide input regarding research, or if you have questions, complaints, or concerns about the research, you may call the Texas A&M University Human Subjects Protection Program office by phone at 1-979-458-4067, toll free at 1-855-795-8636, or by email at irb@tamu.edu.</p>' +
+        '<p></p>' +
+        '<p style="color:#f0e68c;">What if I Change My Mind About Participating?</p>' +
+        '<p>This research is voluntary and you have the choice whether or not to be in this research study. You may decide to not begin or to stop participating at any time. To stop participant after the computer task has started, either press the escape key or exit your browser using your computer’s task manager.  If you choose not to be in this study or stop being in the study, there will be no effect on your student status, medical care, employment, evaluation, relationship with Texas A&M University, etc.</p>' +
+        '<p></p>' +
+        'If you would like to retain a copy of this information sheet, you may copy-paste it into a savable document or use the print screen function on your computer to capture an image of it.' +
+        '</div>',
+      button_html: ['<button class="jspsych-btn-agree">%choice%</button>', '<button class="jspsych-btn-decline">%choice%</button>'],
+      margin_vertical: '20px',
+      post_trial_gap: 1000,
+      data: { intro: 'web study' },
+      on_finish: function () {
+        var data = jsPsych.data.get().last(1).values()[0]
+        if (data.button_pressed == 1) {
+          jsPsych.endExperiment('The subject has declined to participate.');
+        };
+      }
+    });
+
+    // Create demographic questionnaire (split response type into different sections)
+    var questionnaire_0 = {
+      type: 'survey-text',
+      questions: [
+        { prompt: "How old are you?", required: true }
+      ],
+      data: { questionnare: 0, save: true },
+      preamble: '<p style="color:#f0e68c;">The following information will help us to interpret the data gathered during our research and determine for which of our studies you may be eligible:</p>'
+    };
+
+    var page_1_options = ["Right", "Left"];
+    var page_2_options = ["Yes (Normal)", "Yes (Corrected)", "No"];
+    var page_3_options = ["Yes", "No"];
+
+    var questionnaire_1 = {
+      type: 'survey-multi-choice',
+      questions: [
+        { prompt: "Handedness", options: page_1_options, required: true },
+        { prompt: "Do you have normal or corrected-to-normal vision?", options: page_2_options, required: true },
+        { prompt: "If corrected-to-normal, do you have contacts you can wear comfortably?", options: page_3_options, required: false }
+      ],
+      data: { questionnare: 1, save: true }
+    };
+
+    var page_4_options = ["Female", "Male", "No Response"];
+    var page_5_options = ["Hispanic or Latino", "Not Hispanic or Latino", "No Response"];
+
+    var questionnaire_2 = {
+      type: 'survey-multi-choice',
+      questions: [
+        { prompt: "Gender", options: page_4_options, required: true, horizontal: true },
+        { prompt: "Ethnic Category", options: page_5_options, required: true, horizontal: true }
+      ],
+      data: { questionnaire: 2, save: true },
+      preamble: '<p style="color:#f0e68c;">The National Institutes of Health (NIH)requests information on the gender, racial, and ethnic composition of the participants of studies it sponsors. This information is collected to ensure that the results of this study can be generalized to the population as a whole and do not exclude any ethnic or gender groups. You do not have to respond to these questions to participate in experiments in the lab. If you choose to respond, please check the relevant boxes below:</p>',
+      on_load: function () {
+        let options = document.getElementsByClassName("jspsych-survey-multi-choice-option");
+        for (let i = 0; i < options.length; i++) {
+          options[i].style.textAlign = "center";
+        };
+        let title = document.getElementsByClassName("jspsych-survey-multi-choice-horizontal");
+        for (let i = 0; i < title.length; i++) {
+          title[i].style.textAlign = "center";
+        }
+      }
+    };
+
+    var page_6_options = ["American Indian/Alaskan Native", "Asian", "Native Hawaiian or Other Pacific Islander", "Black or African Americans", "White", "No response"];
+
+    var questionnaire_3 = {
+      type: 'survey-multi-select',
+      questions: [
+        {
+          prompt: "Racial Categories (Check all that apply)",
+          options: page_6_options,
+          required: true
+        }
+      ],
+      data: { questionnaire: 3, save: true }
+    };
+
+    timelineInstructions.push(questionnaire_0, questionnaire_1, questionnaire_2, questionnaire_3);
+
+    timelineInstructions.push({
+      type: 'fullscreen',
+      fullscreen_mode: true,
+      on_finish: function () {
+        document.getElementsByClassName('jspsych-content-wrapper')[0].style.cursor = "none";
+        let idleCount = 0;
+        function idleCheck() {
+          if (idleCount == 3) {
+            document.getElementsByClassName('jspsych-content-wrapper')[0].style.cursor = "none";
+            idleCount = 0;
+          };
+          idleCount += 1;
+        };
+
+        $(document).mousemove(function () {
+          document.getElementsByClassName('jspsych-content-wrapper')[0].style.cursor = "auto";
+          idleCount = 0;
+          clearInterval(idle);
+          idle = setInterval(idleCheck, 500);
+        });
+        idle = setInterval(idleCheck, 500);
+      }
+    });
+
+    // NODE A
+    let trainNodeA = {
+      timeline: [],
+      loop_function: function (data) {
+        var data = jsPsych.data.get().last(1).values()[0];
+        return jsPsych.pluginAPI.convertKeyCharacterToKeyCode('m') == data.key_press
+      }
+    };
+
+    trainNodeA.timeline.push({
+      type: 'html-keyboard-response',
+      stimulus: function () {
+        return generateScaledHTML('<p>On every trial, you will see 54 boxes that are either red, blue or green in color.</p>' +
+          '<p>Each box will have a number from 2-9.</p>' +
+          '<p>Each trial there will be one blue and one red box containing a digit between 2-5.</p>' +
+          '<p>You will only have to find one target number every trial.' +
+          '<p>The next screen will have an example.</p>' +
+          '<p>Press the "space bar" to continue.</p>')
+      },
+      choices: [32]
+    });
+
+    trainNodeA.timeline.push({
+      type: 'html-keyboard-response',
+      stimulus: function () { return generateScaledHTML(`<div style=\"position:relative; width:800px; height:800px;  background-color:black;\"><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:575px; top:385px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:549.5448267190434px; top:480px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:480px; top:549.5448267190434px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:385px; top:575px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:290.00000000000006px; top:549.5448267190434px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:220.4551732809567px; top:480.00000000000006px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:195px; top:385px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:220.45517328095661px; top:290.00000000000006px; \">5</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:289.9999999999999px; top:220.4551732809567px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:384.99999999999994px; top:195px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:479.9999999999999px; top:220.4551732809566px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:549.5448267190433px; top:289.9999999999999px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:655px; top:385px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:638.7170076121953px; top:477.34543869793055px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:591.8319996421241px; top:558.5526546153656px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:520px; top:618.8268590217984px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:431.88500797007123px; top:650.8980933132962px; \">5</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:338.1149920299288px; top:650.8980933132962px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:250.00000000000006px; top:618.8268590217984px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:178.16800035787597px; top:558.5526546153657px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:131.28299238780477px; top:477.3454386979306px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:115px; top:385.00000000000006px;\">4</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:131.2829923878047px; top:292.65456130206945px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:178.16800035787594px; top:211.4473453846344px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:249.9999999999999px; top:151.17314097820162px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:338.1149920299288px; top:119.10190668670384px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:431.8850079700711px; top:119.10190668670378px; \">2</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:520px; top:151.1731409782016px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:591.831999642124px; top:211.4473453846343px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:638.7170076121952px; top:292.6545613020693px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:735px; top:385px; \">4</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:723.074039201174px; top:475.58666578588225px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:688.1088913245535px; top:560px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:632.4873734152916px; top:632.4873734152916px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:560px; top:688.1088913245535px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:475.58666578588236px; top:723.074039201174px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:385px; top:735px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:294.41333421411775px; top:723.074039201174px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:210.00000000000009px; top:688.1088913245535px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:137.51262658470839px; top:632.4873734152916px; \">3</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:81.8911086754465px; top:560.0000000000001px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:46.92596079882611px; top:475.58666578588236px; \">4</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:35px; top:385.00000000000006px; \">2</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:46.925960798826054px; top:294.41333421411787px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:81.89110867544639px; top:210.00000000000009px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:137.51262658470824px; top:137.5126265847085px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:209.99999999999986px; top:81.8911086754465px; \">3</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:294.41333421411747px; top:46.92596079882617px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:384.99999999999994px; top:35px;\">2</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:475.58666578588213px; top:46.925960798826054px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:559.9999999999998px; top:81.89110867544633px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:632.4873734152916px; top:137.5126265847083px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:688.1088913245535px; top:209.99999999999986px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:723.0740392011738px; top:294.41333421411747px; \">9</div></div>`) },
+      choices: jsPsych.NO_KEYS,
+      trial_duration: 500
+    });
+
+    trainNodeA.timeline.push({
+      type: 'html-keyboard-response',
+      stimulus: function () { return generateScaledHTML(`<div style=\"position:relative; width:800px; height:800px;  background-color:black;\"><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:575px; top:385px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:549.5448267190434px; top:480px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:480px; top:549.5448267190434px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:385px; top:575px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:290.00000000000006px; top:549.5448267190434px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:220.4551732809567px; top:480.00000000000006px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:195px; top:385px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:220.45517328095661px; top:290.00000000000006px; \">5</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:289.9999999999999px; top:220.4551732809567px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:384.99999999999994px; top:195px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:479.9999999999999px; top:220.4551732809566px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:549.5448267190433px; top:289.9999999999999px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:655px; top:385px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:638.7170076121953px; top:477.34543869793055px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:591.8319996421241px; top:558.5526546153656px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:520px; top:618.8268590217984px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:431.88500797007123px; top:650.8980933132962px; \">5</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:338.1149920299288px; top:650.8980933132962px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:250.00000000000006px; top:618.8268590217984px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:178.16800035787597px; top:558.5526546153657px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:131.28299238780477px; top:477.3454386979306px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:115px; top:385.00000000000006px; outline-style: dotted; outline-width: thick;\">4</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:131.2829923878047px; top:292.65456130206945px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:178.16800035787594px; top:211.4473453846344px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:249.9999999999999px; top:151.17314097820162px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:338.1149920299288px; top:119.10190668670384px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:431.8850079700711px; top:119.10190668670378px; \">2</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:520px; top:151.1731409782016px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:591.831999642124px; top:211.4473453846343px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:638.7170076121952px; top:292.6545613020693px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:735px; top:385px; \">4</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:723.074039201174px; top:475.58666578588225px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:688.1088913245535px; top:560px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:632.4873734152916px; top:632.4873734152916px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:560px; top:688.1088913245535px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:475.58666578588236px; top:723.074039201174px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:385px; top:735px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:294.41333421411775px; top:723.074039201174px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:210.00000000000009px; top:688.1088913245535px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:137.51262658470839px; top:632.4873734152916px; \">3</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:81.8911086754465px; top:560.0000000000001px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:46.92596079882611px; top:475.58666578588236px; \">4</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:35px; top:385.00000000000006px; \">2</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:46.925960798826054px; top:294.41333421411787px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:81.89110867544639px; top:210.00000000000009px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:137.51262658470824px; top:137.5126265847085px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:209.99999999999986px; top:81.8911086754465px; \">3</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:294.41333421411747px; top:46.92596079882617px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:384.99999999999994px; top:35px; outline-style: dotted; outline-width: thick;\">2</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:475.58666578588213px; top:46.925960798826054px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:559.9999999999998px; top:81.89110867544633px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:632.4873734152916px; top:137.5126265847083px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:688.1088913245535px; top:209.99999999999986px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:723.0740392011738px; top:294.41333421411747px; \">9</div></div>`) },
+      choices: jsPsych.NO_KEYS,
+      trial_duration: 500
+    });
+
+    trainNodeA.timeline.push({
+      type: 'html-keyboard-response',
+      stimulus: function () { return generateScaledHTML(`<div style=\"position:relative; width:800px; height:800px;  background-color:black;\"><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:575px; top:385px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:549.5448267190434px; top:480px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:480px; top:549.5448267190434px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:385px; top:575px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:290.00000000000006px; top:549.5448267190434px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:220.4551732809567px; top:480.00000000000006px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:195px; top:385px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:220.45517328095661px; top:290.00000000000006px; \">5</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:289.9999999999999px; top:220.4551732809567px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:384.99999999999994px; top:195px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:479.9999999999999px; top:220.4551732809566px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:549.5448267190433px; top:289.9999999999999px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:655px; top:385px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:638.7170076121953px; top:477.34543869793055px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:591.8319996421241px; top:558.5526546153656px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:520px; top:618.8268590217984px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:431.88500797007123px; top:650.8980933132962px; \">5</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:338.1149920299288px; top:650.8980933132962px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:250.00000000000006px; top:618.8268590217984px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:178.16800035787597px; top:558.5526546153657px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:131.28299238780477px; top:477.3454386979306px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:115px; top:385.00000000000006px;\">4</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:131.2829923878047px; top:292.65456130206945px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:178.16800035787594px; top:211.4473453846344px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:249.9999999999999px; top:151.17314097820162px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:338.1149920299288px; top:119.10190668670384px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:431.8850079700711px; top:119.10190668670378px; \">2</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:520px; top:151.1731409782016px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:591.831999642124px; top:211.4473453846343px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:638.7170076121952px; top:292.6545613020693px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:735px; top:385px; \">4</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:723.074039201174px; top:475.58666578588225px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:688.1088913245535px; top:560px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:632.4873734152916px; top:632.4873734152916px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:560px; top:688.1088913245535px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:475.58666578588236px; top:723.074039201174px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:385px; top:735px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:294.41333421411775px; top:723.074039201174px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:210.00000000000009px; top:688.1088913245535px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:137.51262658470839px; top:632.4873734152916px; \">3</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:81.8911086754465px; top:560.0000000000001px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:46.92596079882611px; top:475.58666578588236px; \">4</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:35px; top:385.00000000000006px; \">2</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:46.925960798826054px; top:294.41333421411787px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:81.89110867544639px; top:210.00000000000009px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:137.51262658470824px; top:137.5126265847085px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:209.99999999999986px; top:81.8911086754465px; \">3</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:294.41333421411747px; top:46.92596079882617px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:384.99999999999994px; top:35px;\">2</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:475.58666578588213px; top:46.925960798826054px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:559.9999999999998px; top:81.89110867544633px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:632.4873734152916px; top:137.5126265847083px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:688.1088913245535px; top:209.99999999999986px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:723.0740392011738px; top:294.41333421411747px; \">9</div></div>`) },
+      choices: jsPsych.NO_KEYS,
+      trial_duration: 500
+    });
+
+    trainNodeA.timeline.push({
+      type: 'html-keyboard-response',
+      stimulus: function () { return generateScaledHTML(`<div style=\"position:relative; width:800px; height:800px;  background-color:black;\"><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:575px; top:385px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:549.5448267190434px; top:480px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:480px; top:549.5448267190434px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:385px; top:575px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:290.00000000000006px; top:549.5448267190434px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:220.4551732809567px; top:480.00000000000006px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:195px; top:385px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:220.45517328095661px; top:290.00000000000006px; \">5</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:289.9999999999999px; top:220.4551732809567px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:384.99999999999994px; top:195px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:479.9999999999999px; top:220.4551732809566px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:549.5448267190433px; top:289.9999999999999px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:655px; top:385px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:638.7170076121953px; top:477.34543869793055px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:591.8319996421241px; top:558.5526546153656px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:520px; top:618.8268590217984px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:431.88500797007123px; top:650.8980933132962px; \">5</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:338.1149920299288px; top:650.8980933132962px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:250.00000000000006px; top:618.8268590217984px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:178.16800035787597px; top:558.5526546153657px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:131.28299238780477px; top:477.3454386979306px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:115px; top:385.00000000000006px; outline-style: dotted; outline-width: thick;\">4</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:131.2829923878047px; top:292.65456130206945px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:178.16800035787594px; top:211.4473453846344px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:249.9999999999999px; top:151.17314097820162px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:338.1149920299288px; top:119.10190668670384px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:431.8850079700711px; top:119.10190668670378px; \">2</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:520px; top:151.1731409782016px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:591.831999642124px; top:211.4473453846343px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:638.7170076121952px; top:292.6545613020693px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:735px; top:385px; \">4</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:723.074039201174px; top:475.58666578588225px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:688.1088913245535px; top:560px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:632.4873734152916px; top:632.4873734152916px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:560px; top:688.1088913245535px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:475.58666578588236px; top:723.074039201174px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:385px; top:735px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:294.41333421411775px; top:723.074039201174px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:210.00000000000009px; top:688.1088913245535px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:137.51262658470839px; top:632.4873734152916px; \">3</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:81.8911086754465px; top:560.0000000000001px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:46.92596079882611px; top:475.58666578588236px; \">4</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:35px; top:385.00000000000006px; \">2</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:46.925960798826054px; top:294.41333421411787px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:81.89110867544639px; top:210.00000000000009px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:137.51262658470824px; top:137.5126265847085px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:209.99999999999986px; top:81.8911086754465px; \">3</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:294.41333421411747px; top:46.92596079882617px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:384.99999999999994px; top:35px; outline-style: dotted; outline-width: thick;\">2</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:475.58666578588213px; top:46.925960798826054px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:559.9999999999998px; top:81.89110867544633px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:632.4873734152916px; top:137.5126265847083px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:688.1088913245535px; top:209.99999999999986px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:723.0740392011738px; top:294.41333421411747px; \">9</div></div>`) },
+      choices: jsPsych.NO_KEYS,
+      trial_duration: 500
+    });
+
+    trainNodeA.timeline.push({
+      type: 'html-keyboard-response',
+      stimulus: function () { return generateScaledHTML(`<div style=\"position:relative; width:800px; height:800px;  background-color:black;\"><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:575px; top:385px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:549.5448267190434px; top:480px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:480px; top:549.5448267190434px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:385px; top:575px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:290.00000000000006px; top:549.5448267190434px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:220.4551732809567px; top:480.00000000000006px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:195px; top:385px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:220.45517328095661px; top:290.00000000000006px; \">5</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:289.9999999999999px; top:220.4551732809567px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:384.99999999999994px; top:195px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:479.9999999999999px; top:220.4551732809566px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:549.5448267190433px; top:289.9999999999999px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:655px; top:385px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:638.7170076121953px; top:477.34543869793055px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:591.8319996421241px; top:558.5526546153656px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:520px; top:618.8268590217984px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:431.88500797007123px; top:650.8980933132962px; \">5</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:338.1149920299288px; top:650.8980933132962px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:250.00000000000006px; top:618.8268590217984px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:178.16800035787597px; top:558.5526546153657px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:131.28299238780477px; top:477.3454386979306px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:115px; top:385.00000000000006px;\">4</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:131.2829923878047px; top:292.65456130206945px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:178.16800035787594px; top:211.4473453846344px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:249.9999999999999px; top:151.17314097820162px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:338.1149920299288px; top:119.10190668670384px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:431.8850079700711px; top:119.10190668670378px; \">2</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:520px; top:151.1731409782016px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:591.831999642124px; top:211.4473453846343px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:638.7170076121952px; top:292.6545613020693px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:735px; top:385px; \">4</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:723.074039201174px; top:475.58666578588225px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:688.1088913245535px; top:560px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:632.4873734152916px; top:632.4873734152916px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:560px; top:688.1088913245535px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:475.58666578588236px; top:723.074039201174px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:385px; top:735px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:294.41333421411775px; top:723.074039201174px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:210.00000000000009px; top:688.1088913245535px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:137.51262658470839px; top:632.4873734152916px; \">3</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:81.8911086754465px; top:560.0000000000001px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:46.92596079882611px; top:475.58666578588236px; \">4</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:35px; top:385.00000000000006px; \">2</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:46.925960798826054px; top:294.41333421411787px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:81.89110867544639px; top:210.00000000000009px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:137.51262658470824px; top:137.5126265847085px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:209.99999999999986px; top:81.8911086754465px; \">3</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:294.41333421411747px; top:46.92596079882617px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:384.99999999999994px; top:35px;\">2</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:475.58666578588213px; top:46.925960798826054px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:559.9999999999998px; top:81.89110867544633px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:632.4873734152916px; top:137.5126265847083px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:688.1088913245535px; top:209.99999999999986px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:723.0740392011738px; top:294.41333421411747px; \">9</div></div>`) },
+      choices: jsPsych.NO_KEYS,
+      trial_duration: 500
+    });
+
+    trainNodeA.timeline.push({
+      type: 'html-keyboard-response',
+      stimulus: function () { return generateScaledHTML(`<div style=\"position:relative; width:800px; height:800px;  background-color:black;\"><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:575px; top:385px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:549.5448267190434px; top:480px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:480px; top:549.5448267190434px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:385px; top:575px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:290.00000000000006px; top:549.5448267190434px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:220.4551732809567px; top:480.00000000000006px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:195px; top:385px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:220.45517328095661px; top:290.00000000000006px; \">5</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:289.9999999999999px; top:220.4551732809567px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:384.99999999999994px; top:195px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:479.9999999999999px; top:220.4551732809566px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:549.5448267190433px; top:289.9999999999999px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:655px; top:385px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:638.7170076121953px; top:477.34543869793055px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:591.8319996421241px; top:558.5526546153656px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:520px; top:618.8268590217984px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:431.88500797007123px; top:650.8980933132962px; \">5</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:338.1149920299288px; top:650.8980933132962px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:250.00000000000006px; top:618.8268590217984px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:178.16800035787597px; top:558.5526546153657px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:131.28299238780477px; top:477.3454386979306px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:115px; top:385.00000000000006px; outline-style: dotted; outline-width: thick;\">4</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:131.2829923878047px; top:292.65456130206945px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:178.16800035787594px; top:211.4473453846344px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:249.9999999999999px; top:151.17314097820162px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:338.1149920299288px; top:119.10190668670384px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:431.8850079700711px; top:119.10190668670378px; \">2</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:520px; top:151.1731409782016px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:591.831999642124px; top:211.4473453846343px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:638.7170076121952px; top:292.6545613020693px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:735px; top:385px; \">4</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:723.074039201174px; top:475.58666578588225px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:688.1088913245535px; top:560px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:632.4873734152916px; top:632.4873734152916px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:560px; top:688.1088913245535px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:475.58666578588236px; top:723.074039201174px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:385px; top:735px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:294.41333421411775px; top:723.074039201174px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:210.00000000000009px; top:688.1088913245535px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:137.51262658470839px; top:632.4873734152916px; \">3</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:81.8911086754465px; top:560.0000000000001px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:46.92596079882611px; top:475.58666578588236px; \">4</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:35px; top:385.00000000000006px; \">2</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:46.925960798826054px; top:294.41333421411787px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:81.89110867544639px; top:210.00000000000009px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:137.51262658470824px; top:137.5126265847085px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:209.99999999999986px; top:81.8911086754465px; \">3</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:294.41333421411747px; top:46.92596079882617px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:384.99999999999994px; top:35px; outline-style: dotted; outline-width: thick;\">2</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:475.58666578588213px; top:46.925960798826054px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:559.9999999999998px; top:81.89110867544633px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:632.4873734152916px; top:137.5126265847083px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:688.1088913245535px; top:209.99999999999986px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:723.0740392011738px; top:294.41333421411747px; \">9</div></div>`) },
+      choices: jsPsych.NO_KEYS,
+      trial_duration: 500
+    });
+
+    trainNodeA.timeline.push({
+      type: 'html-keyboard-response',
+      stimulus: function () { return generateScaledHTML(`<div style=\"position:relative; width:800px; height:800px;  background-color:black;\"><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:575px; top:385px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:549.5448267190434px; top:480px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:480px; top:549.5448267190434px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:385px; top:575px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:290.00000000000006px; top:549.5448267190434px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:220.4551732809567px; top:480.00000000000006px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:195px; top:385px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:220.45517328095661px; top:290.00000000000006px; \">5</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:289.9999999999999px; top:220.4551732809567px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:384.99999999999994px; top:195px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:479.9999999999999px; top:220.4551732809566px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:549.5448267190433px; top:289.9999999999999px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:655px; top:385px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:638.7170076121953px; top:477.34543869793055px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:591.8319996421241px; top:558.5526546153656px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:520px; top:618.8268590217984px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:431.88500797007123px; top:650.8980933132962px; \">5</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:338.1149920299288px; top:650.8980933132962px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:250.00000000000006px; top:618.8268590217984px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:178.16800035787597px; top:558.5526546153657px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:131.28299238780477px; top:477.3454386979306px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:115px; top:385.00000000000006px; outline-style: dotted; outline-width: thick;\">4</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:131.2829923878047px; top:292.65456130206945px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:178.16800035787594px; top:211.4473453846344px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:249.9999999999999px; top:151.17314097820162px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:338.1149920299288px; top:119.10190668670384px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:431.8850079700711px; top:119.10190668670378px; \">2</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:520px; top:151.1731409782016px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:591.831999642124px; top:211.4473453846343px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:638.7170076121952px; top:292.6545613020693px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:735px; top:385px; \">4</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:723.074039201174px; top:475.58666578588225px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:688.1088913245535px; top:560px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:632.4873734152916px; top:632.4873734152916px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:560px; top:688.1088913245535px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:475.58666578588236px; top:723.074039201174px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:385px; top:735px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:294.41333421411775px; top:723.074039201174px; \">9</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:210.00000000000009px; top:688.1088913245535px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:137.51262658470839px; top:632.4873734152916px; \">3</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:81.8911086754465px; top:560.0000000000001px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:46.92596079882611px; top:475.58666578588236px; \">4</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:35px; top:385.00000000000006px; \">2</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:46.925960798826054px; top:294.41333421411787px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:81.89110867544639px; top:210.00000000000009px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:137.51262658470824px; top:137.5126265847085px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:209.99999999999986px; top:81.8911086754465px; \">3</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:294.41333421411747px; top:46.92596079882617px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:384.99999999999994px; top:35px; outline-style: dotted; outline-width: thick;\">2</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:475.58666578588213px; top:46.925960798826054px; \">8</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:559.9999999999998px; top:81.89110867544633px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:632.4873734152916px; top:137.5126265847083px; \">7</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:688.1088913245535px; top:209.99999999999986px; \">6</div><div style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:723.0740392011738px; top:294.41333421411747px; \">9</div><div style="position: absolute; left: 290px; top: 340px;"><p>Press the "space bar"</p><p>to continue.</p></div></div>`) },
+      choices: [32]
+    });
+
+    trainNodeA.timeline.push({
+      type: 'html-keyboard-response',
+      stimulus: function () {
+        return generateScaledHTML('<p>Press the "Z", "X", "N", and "M" keys corresponding to the target numbers 2, 3, 4, and 5 respectively.</p>' +
+          '<p>Both red and blue target boxes will be available, but you only have to report one of them.</p>' +
+          '<p>The green boxes are irrelevant to the task.</p>' +
+          '<p>Press the "space bar" to practice the task.</p>')
+      },
+      choices: [32]
+    });
+
+    trainNodeA.timeline.push({
+      type: 'html-keyboard-response',
+      stimulus: function () {
+        return generateScaledHTML('<div style="position: relative; width: 1000px; height: 800px; background-color:black; ">' +
+          '<div style="position: absolute; height: 120px; width: 200px; left: 0px; top: 100px;">For target numbers in these colors (example)</div>' +
+          '<div style="font-size: 60px; position: absolute; height: 60px; width: 60px; left: 270px; top: 80px; background-color:red; line-height: 60px;">2</div>' +
+          '<div style="font-size: 40px; position: absolute; height: 60px; width: 60px; left: 270px; top: 150px;">or</div>' +
+          '<div style="font-size: 60px; position: absolute; height: 60px; width: 60px; left: 270px; top: 200px; background-color:blue; line-height: 60px;">2</div>' +
+          '<div style="font-size: 60px; position: absolute; height: 60px; width: 60px; left: 470px; top: 80px; background-color:red; line-height: 60px;">3</div>' +
+          '<div style="font-size: 40px; position: absolute; height: 60px; width: 60px; left: 470px; top: 150px;">or</div>' +
+          '<div style="font-size: 60px; position: absolute; height: 60px; width: 60px; left: 470px; top: 200px; background-color:blue; line-height: 60px;">3</div>' +
+          '<div style="font-size: 60px; position: absolute; height: 60px; width: 60px; left: 670px; top: 80px; background-color:red; line-height: 60px;">4</div>' +
+          '<div style="font-size: 40px; position: absolute; height: 60px; width: 60px; left: 670px; top: 150px;">or</div>' +
+          '<div style="font-size: 60px; position: absolute; height: 60px; width: 60px; left: 670px; top: 200px; background-color:blue; line-height: 60px;">4</div>' +
+          '<div style="font-size: 60px; position: absolute; height: 60px; width: 60px; left: 870px; top: 80px; background-color:red; line-height: 60px;">5</div>' +
+          '<div style="font-size: 40px; position: absolute; height: 60px; width: 60px; left: 870px; top: 150px;">or</div>' +
+          '<div style="font-size: 60px; position: absolute; height: 60px; width: 60px; left: 870px; top: 200px; background-color:blue; line-height: 60px;">5</div>' +
+          '<div style="position: absolute; height: 120px; width: 200px; left: 0px; top: 320px;">Press these keys:</div>' +
+          '<div style="position: absolute; border-style:solid; line-height:80px; font-size:60px; height: 80px; width: 80px; left: 260px; top: 300px;">Z</div>' +
+          '<div style="position: absolute; border-style:solid; line-height:80px; font-size:60px; height: 80px; width: 80px; left: 460px; top: 300px;">X</div>' +
+          '<div style="position: absolute; border-style:solid; line-height:80px; font-size:60px; height: 80px; width: 80px; left: 660px; top: 300px;">N</div>' +
+          '<div style="position: absolute; border-style:solid; line-height:80px; font-size:60px; height: 80px; width: 80px; left: 860px; top: 300px;">M</div>' +
+          '<div style="position: absolute; line-height: 35px; border-style:dotted; height: 150px; width: 300px; left: 250px; top: 450px;">' +
+          '<div style="position:absolute; width:0px; height:0px;border-left: 30px solid transparent; border-right: 30px solid transparent; border-bottom: 30px solid white; left:20px; top:20px;"></div>' +
+          '<div style="position:absolute; width:0px; height:0px;border-left: 30px solid transparent; border-right: 30px solid transparent; border-bottom: 30px solid white; left:220px; top:20px;"></div>' +
+          '<div style="position:absolute; width:300px; height:35px; left:0px; top:80px;">Left hand</div>' +
+          '</div>' +
+          '<div style="position: absolute; line-height: 35px; border-style:dotted; height: 150px; width: 300px; left: 650px; top: 450px;">' +
+          '<div style="position:absolute; width:0px; height:0px;border-left: 30px solid transparent; border-right: 30px solid transparent; border-bottom: 30px solid white; left:20px; top:20px;"></div>' +
+          '<div style="position:absolute; width:0px; height:0px;border-left: 30px solid transparent; border-right: 30px solid transparent; border-bottom: 30px solid white; left:220px; top:20px;"></div>' +
+          '<div style="position:absolute; width:300px; height:35px; left:0px; top:80px;">Right hand</div>' +
+          '</div>' +
+          '<div style="position:absolute; width:800px; height:40px; top:650px; left: 200px;">Press the "space bar" once you understand these instructions.</div>' +
+          '</div>')
+      },
+      choices: [32]
+    });
+
+    for (let i = 0; i < 8; i++) {
+      trainNodeA.timeline.push({
+        type: 'html-keyboard-response',
+        stimulus: function () { return generateScaledHTML('<div style="font-size:80px;">+</div>') },
+        choices: jsPsych.NO_KEYS,
+        trial_duration: 1000
+      });
+
+      trainNodeA.timeline.push({
+        type: 'html-keyboard-response',
+        stimulus: function () { return generateScaledHTMLwObfuscator(trialConditionsTrain[i]) },
+        on_load: function () {
+          document.getElementById("jspsych-html-keyboard-response-stimulus").style.minWidth = 900;
+          setTimeout(() => { document.getElementById("obfuscator").style.visibility = "hidden" }, 0)
+        },
+        choices: [90, 88, 78, 77]
+      });
+
+      trainNodeA.timeline.push({
+        type: 'html-keyboard-response',
+        stimulus: function () {
+          var lastResponse = jsPsych.data.get().last(1).values()[0];
+          if (lastResponse.rt == null) {
+            return generateScaledHTML('<div style="font-size:40px;">Too Slow</div>')
+          } else if (!keyPressLogTrain[i].includes(lastResponse.key_press)) {
+            return generateScaledHTML('<div style="font-size:40px;">Incorrect</div>')
+          } else {
+            return ''
+          }
+        },
+        choices: jsPsych.NO_KEYS,
+        trial_duration: function () {
+          var lastResponse = jsPsych.data.get().last(1).values()[0];
+          if (lastResponse.rt == null) {
+            return 1000
+          } else if (!keyPressLogTrain[i].includes(lastResponse.key_press)) {
+            return 1000
+          } else {
+            return 0
+          }
+        }
+      });
+
+      trainNodeA.timeline.push({
+        type: 'html-keyboard-response',
+        stimulus: '',
+        choices: jsPsych.NO_KEYS,
+        trial_duration: 1000
+      })
+    }
+
+    trainNodeA.timeline.push({
+      type: 'html-keyboard-response',
+      stimulus: function () {
+        return generateScaledHTML('<p>Press "Z" to continue if you understood these instructions.</p>' +
+          '<p>Otherwise, press "M" to practice again.</p>')
+      },
+      choices: [90, 77]
+    });
+
+    // NODE B
+    let trainNodeB = {
+      timeline: [],
+      loop_function: function (data) {
+        var data = jsPsych.data.get().last(1).values()[0];
+        return jsPsych.pluginAPI.convertKeyCharacterToKeyCode('m') == data.key_press
+      }
+    };
+
+    trainNodeB.timeline.push({
+      type: 'html-keyboard-response',
+      stimulus: function () {
+        return generateScaledHTML('<p>Try to find one of the target boxes as fast as possible.</p>' +
+          '<p>You will see the words "Too Slow" if you respond too slowly.</p>' +
+          '<p>Press the "space bar" to start the task.</p>')
+      },
+      choices: [32]
+    });
+
+    for (let i = 8; i < 16; i++) {
+      trainNodeB.timeline.push({
+        type: 'html-keyboard-response',
+        stimulus: function () { return generateScaledHTML('<div style="font-size:80px;">+</div>') },
+        choices: jsPsych.NO_KEYS,
+        trial_duration: 1000
+      });
+
+      trainNodeB.timeline.push({
+        type: 'html-keyboard-response',
+        stimulus: function () { return generateScaledHTMLwObfuscator(trialConditionsTrain[i]) },
+        on_load: function () {
+          document.getElementById("jspsych-html-keyboard-response-stimulus").style.minWidth = 900;
+          setTimeout(() => { document.getElementById("obfuscator").style.visibility = "hidden" }, 0)
+        },
+        choices: [90, 88, 78, 77],
+        trial_duration: 5500
+      });
+
+      trainNodeB.timeline.push({
+        type: 'html-keyboard-response',
+        stimulus: function () {
+          var lastResponse = jsPsych.data.get().last(1).values()[0];
+          if (lastResponse.rt == null) {
+            return generateScaledHTML('<div style="font-size:40px;">Too Slow</div>')
+          } else if (!keyPressLogTrain[i].includes(lastResponse.key_press)) {
+            return generateScaledHTML('<div style="font-size:40px;">Incorrect</div>')
+          } else {
+            return ''
+          }
+        },
+        choices: jsPsych.NO_KEYS,
+        trial_duration: function () {
+          var lastResponse = jsPsych.data.get().last(1).values()[0];
+          if (lastResponse.rt == null) {
+            return 1000
+          } else if (!keyPressLogTrain[i].includes(lastResponse.key_press)) {
+            return 1000
+          } else {
+            return 0
+          }
+        }
+      });
+
+      trainNodeB.timeline.push({
+        type: 'html-keyboard-response',
+        stimulus: '',
+        choices: jsPsych.NO_KEYS,
+        trial_duration: 1000
+      });
+    }
+
+    trainNodeB.timeline.push({
+      type: 'html-keyboard-response',
+      stimulus: function () {
+        return generateScaledHTML('<p>Press "Z" to continue if you understood these instructions.</p>' +
+          '<p>Otherwise, press "M" to practice again.</p>')
+      },
+      choices: [90, 77]
+    });
+
+    timelineTraining.push(trainNodeA);
+    timelineTraining.push(trainNodeB);
+    timelineTraining.push({
+      type: 'html-keyboard-response',
+      stimulus: function () {
+        return generateScaledHTML('<p>Good job!</p>' +
+          '<p>Press the "space bar" to move onto the main task.</p>')
+      },
+    });
+    timelineTraining.push({
+      type: 'html-keyboard-response',
+      stimulus: function () { return generateScaledHTML('<p>Test starting in 5 seconds, get your hands in position!</p>') },
+      choices: jsPsych.NO_KEYS,
+      trial_duration: 5000
+    })
+    ////////////////////////////////////
+
+    ////////////////////////////////////
+    // Create test conditions
+    for (let i = 0; i < numTrials; i++) {
+      if (i == 10) {
+        timelineTest.push(
+          breakStart, breakEnd
+        );
+      }
+
+      timelineTest.push({
+        type: 'html-keyboard-response',
+        stimulus: function () { return generateScaledHTML('<div style="font-size:80px;">+</div>') },
+        choices: jsPsych.NO_KEYS,
+        trial_duration: 1000,
+      });
+
+      timelineTest.push({
+        type: 'html-keyboard-response',
+        stimulus: function () {
+          return generateScaledHTMLwObfuscator(trialConditions[i])
+        },
+        trial_duration: 5550,
+        on_load: function () {
+            //document.getElementById("jspsych-html-keyboard-response-stimulus").style.overflow = "hidden";
+            document.getElementById("jspsych-html-keyboard-response-stimulus").style.minWidth = 900;
+            setTimeout(() => { document.getElementById("obfuscator").style.visibility = "hidden" }, 50)
+          },
+        choices: [90, 88, 78, 77],
+        //trial_duration: 5500
+      });
+
+      timelineTest.push({
+        type: 'html-keyboard-response',
+        stimulus: function () {
+          var lastResponse = jsPsych.data.get().last(1).values()[0];
+          if (lastResponse.rt == null) {
+            return generateScaledHTML('<div style="font-size:40px;">Too Slow</div>')
+          } else if (!keyPressLog[i].includes(lastResponse.key_press)) {
+            return generateScaledHTML('<div style="font-size:40px;">Incorrect</div>')
+          } else {
+            return ''
+          }
+        },
+        choices: jsPsych.NO_KEYS,
+        trial_duration: function () {
+          var lastResponse = jsPsych.data.get().last(1).values()[0];
+          if (lastResponse.rt == null) {
+            return 1000
+          } else if (!keyPressLog[i].includes(lastResponse.key_press)) {
+            return 1000
+          } else {
+            return 0
+          }
+        },
+        data: {
+          save: true,
+          numRed: conditionColors[i][0],
+          numBlue: conditionColors[i][1],
+          targetRed: conditionTargetIdentity[i][0],
+          targetBlue: conditionTargetIdentity[i][1],
+          keyPress: function () {
+            var lastResponse = jsPsych.data.get().last(1).values()[0];
+            return lastResponse.key_press
+          },
+          RT: function () {
+            var lastResponse = jsPsych.data.get().last(1).values()[0];
+            return lastResponse.rt
+          },
+          stim: function () {
+            var lastResponse = jsPsych.data.get().last(1).values()[0];
+            return lastResponse.stimulus
+          }
+        },
+        on_finish: function () {
+          let lastTrial = jsPsych.data.get().last(1).values()[0];
+          console.log(lastTrial);
+        }
+      });
+
+      timelineTest.push({
+        type: 'html-keyboard-response',
+        stimulus: '',
+        choices: jsPsych.NO_KEYS,
+        trial_duration: 1000
+      });
+    }
+    ////////////////////////////////////
+
+    ////////////////////////////////////
+    timelinePost.push({
+      type: 'html-keyboard-response',
+      stimulus: function () {
+        return generateScaledHTML('<p>For the next task you will again see 54 boxes on each display.</p>' +
+          '<p>The colors will still be red, blue, or green, but will no longer include any numbers.</p>' +
+          '<p>On the next screen you will see an example of what each trial will look like.</p>' +
+          '<p> </p>' +
+          '<p>Press any key to see an example.</p>')
+      },
+    });
+
+    timelinePost.push({
+      type: 'html-keyboard-response',
+      stimulus: function () {
+        return generateScaledHTMLwObfuscator(`<div style=\"position: relative; width: 800px; height: 800px;` +
+          `background-color: black; \" id=\"container\"><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:575px; top:385px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:549.5448267190434px; top:480px; \"></div>` +
+          `<div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:480px; top:549.5448267190434px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:385px; top:575px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:290.00000000000006px; top:549.5448267190434px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:220.4551732809567px; top:480.00000000000006px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:195px; top:385px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:220.45517328095661px; top:290.00000000000006px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:289.9999999999999px; top:220.4551732809567px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:384.99999999999994px; top:195px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:479.9999999999999px; top:220.4551732809566px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:549.5448267190433px; top:289.9999999999999px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:655px; top:385px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:638.7170076121953px; top:477.34543869793055px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:591.8319996421241px; top:558.5526546153656px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:520px; top:618.8268590217984px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:431.88500797007123px; top:650.8980933132962px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:338.1149920299288px; top:650.8980933132962px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:250.00000000000006px; top:618.8268590217984px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:178.16800035787597px; top:558.5526546153657px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:131.28299238780477px; top:477.3454386979306px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:115px; top:385.00000000000006px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:131.2829923878047px; top:292.65456130206945px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:178.16800035787594px; top:211.4473453846344px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:249.9999999999999px; top:151.17314097820162px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:338.1149920299288px; top:119.10190668670384px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:431.8850079700711px; top:119.10190668670378px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:520px; top:151.1731409782016px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:591.831999642124px; top:211.4473453846343px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:638.7170076121952px; top:292.6545613020693px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:735px; top:385px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:723.074039201174px; top:475.58666578588225px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:688.1088913245535px; top:560px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:632.4873734152916px; top:632.4873734152916px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:560px; top:688.1088913245535px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:475.58666578588236px; top:723.074039201174px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:385px; top:735px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:294.41333421411775px; top:723.074039201174px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:210.00000000000009px; top:688.1088913245535px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:137.51262658470839px; top:632.4873734152916px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:81.8911086754465px; top:560.0000000000001px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:46.92596079882611px; top:475.58666578588236px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:35px; top:385.00000000000006px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:46.925960798826054px; top:294.41333421411787px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:81.89110867544639px; top:210.00000000000009px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:137.51262658470824px; top:137.5126265847085px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:209.99999999999986px; top:81.8911086754465px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:294.41333421411747px; top:46.92596079882617px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:384.99999999999994px; top:35px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:475.58666578588213px; top:46.925960798826054px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:559.9999999999998px; top:81.89110867544633px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:632.4873734152916px; top:137.5126265847083px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:688.1088913245535px; top:209.99999999999986px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:723.0740392011738px; top:294.41333421411747px; \"></div></div>`)
+      },
+      on_load: function () {
+          document.getElementById("jspsych-html-keyboard-response-stimulus").style.minWidth = 900;
+          setTimeout(() => { document.getElementById("obfuscator").style.visibility = "hidden" }, 0)
+        },
+      choices: jsPsych.NO_KEYS,
+      trial_duration: 2500
+    });
+
+    timelinePost.push({
+      type: 'html-keyboard-response',
+      stimulus: function () {
+        return generateScaledHTML(`<div style=\"position: relative; width: 800px; height: 800px; background-color: black; \" id=\"container\"><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:575px; top:385px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:549.5448267190434px; top:480px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:480px; top:549.5448267190434px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:385px; top:575px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:290.00000000000006px; top:549.5448267190434px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:220.4551732809567px; top:480.00000000000006px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:195px; top:385px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:220.45517328095661px; top:290.00000000000006px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:289.9999999999999px; top:220.4551732809567px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:384.99999999999994px; top:195px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:479.9999999999999px; top:220.4551732809566px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:549.5448267190433px; top:289.9999999999999px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:655px; top:385px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:638.7170076121953px; top:477.34543869793055px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:591.8319996421241px; top:558.5526546153656px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:520px; top:618.8268590217984px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:431.88500797007123px; top:650.8980933132962px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:338.1149920299288px; top:650.8980933132962px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:250.00000000000006px; top:618.8268590217984px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:178.16800035787597px; top:558.5526546153657px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:131.28299238780477px; top:477.3454386979306px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:115px; top:385.00000000000006px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:131.2829923878047px; top:292.65456130206945px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:178.16800035787594px; top:211.4473453846344px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:249.9999999999999px; top:151.17314097820162px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:338.1149920299288px; top:119.10190668670384px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:431.8850079700711px; top:119.10190668670378px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:520px; top:151.1731409782016px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:591.831999642124px; top:211.4473453846343px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:638.7170076121952px; top:292.6545613020693px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:735px; top:385px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:723.074039201174px; top:475.58666578588225px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:688.1088913245535px; top:560px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:632.4873734152916px; top:632.4873734152916px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:560px; top:688.1088913245535px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:475.58666578588236px; top:723.074039201174px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:385px; top:735px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:294.41333421411775px; top:723.074039201174px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:210.00000000000009px; top:688.1088913245535px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:137.51262658470839px; top:632.4873734152916px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:81.8911086754465px; top:560.0000000000001px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:46.92596079882611px; top:475.58666578588236px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:35px; top:385.00000000000006px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:46.925960798826054px; top:294.41333421411787px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:81.89110867544639px; top:210.00000000000009px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:137.51262658470824px; top:137.5126265847085px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:209.99999999999986px; top:81.8911086754465px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:294.41333421411747px; top:46.92596079882617px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:384.99999999999994px; top:35px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:475.58666578588213px; top:46.925960798826054px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:559.9999999999998px; top:81.89110867544633px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:blue; left:632.4873734152916px; top:137.5126265847083px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:green; left:688.1088913245535px; top:209.99999999999986px; \"></div><div class=\"hover\" style=\"position:absolute; width:30px; height:30px; line-height:30px; font-size:25px;background-color:red; left:723.0740392011738px; top:294.41333421411747px; \"></div>` +
+          '<div style="position:absolute; width:300px; height:100px; top:350px; left: 250px;">Click on any square to continue</div>' +
+          `</div>` +
+          '<div id="dialog"><p><span class="ui-icon-alert" style="float:left; margin:12px 12px 20px 0;"></span>Are you sure?</p></div>')
+      },
+      choices: jsPsych.NO_KEYS,
+      on_load: function () {
+        $("#dialog").dialog({
+          autoOpen: false,
+          modal: true,
+          closeText: ''
+        });
+
+        $(".hover").click(function (e) {
+          e.preventDefault();
+          $("#dialog").dialog({
+            autoOpen: false,
+            modal: true,
+            buttons: {
+              "Confirm": function () {
+                jsPsych.finishTrial();
+                $(this).dialog("close");
+              },
+              "Cancel": function () {
+                $(this).dialog("close");
+              }
+            }
+          });
+          $("#dialog").dialog("open");
+        });
+      },
+      post_trial_gap: 500
+    });
+
+    timelinePost.push({
+      type: 'html-keyboard-response',
+      stimulus: function () {
+        return generateScaledHTML('<p>Your task is to click on the square that you think will most likely contain the target number (2-5).</p>' +
+          '<p>Each trial will direct you to click on a specific color.</p>' +
+          '<p>Press any key to continue.</p>')
+      },
+    });
+
+    for (let i = 0; i < numTrialsPost; i++) {
+      timelinePost.push({
+        type: 'html-keyboard-response',
+        stimulus: function () { return generateScaledHTML('<div style="font-size:80px;">+</div>') },
+        choices: jsPsych.NO_KEYS,
+        trial_duration: 1000
+      })
+
+      timelinePost.push({
+        type: 'html-keyboard-response',
+        stimulus: function () {
+          return generateScaledHTML(trialConditionsPost[i])
+        },
+        choices: jsPsych.NO_KEYS,
+        on_load: function () {          
+          $(document).ready(function () {
+            $("#dialog").dialog({
+              autoOpen: false,
+              modal: true,
+              closeText: ''
+            });
+          });
+          $(".hover").click(function (e) {
+            const xMouse = e.pageX;
+            const yMouse = e.pageY;
+            e.preventDefault();
+            $("#dialog").dialog({
+              autoOpen: false,
+              modal: true,
+              buttons: {
+                "Confirm": function () {
+                  jsPsych.finishTrial({
+                    coordinates: [xMouse - windowWidth / 2, yMouse - windowHeight / 2],
+                    quadrant: getQuadrant(xMouse, yMouse),
+                    condition: colorLogPost[i],
+                    save: true
+                  });
+                  $(this).dialog("close");
+                },
+                "Cancel": function () {
+                  $(this).dialog("close");
+                }
+              }
+            });
+            $("#dialog").dialog("open");
+          });
+        },
+        on_finish: function () {
+          console.log(jsPsych.data.get().last(1).values()[0]);
+        }
+      });
+    }
+    ///////////////////////////////////////////
+
+    ///////////////////////////////////////////
+    // Combine all phases into main timeline 
+    timeline = timeline.concat(timelineInstructions)
+    timeline = timeline.concat(timelineTraining);
+    timeline = timeline.concat(timelineTest);
+    timeline = timeline.concat(timelinePost);
+    ///////////////////////////////////////////
+
+    // Enter debrief block and create credit token link
+    timeline.push({
+      type: 'html-button-response',
+      stimulus: `<p style="font-size: 30px; color:#f0e68c;">DO NOT EXIT OR LEAVE YOUR BROWSER YET, READ AND CONTINUE</p>` +
+        '<div style="position: relative; margin: auto; width: 1000px; height: 600px; background-color:black; overflow: scroll;text-align: left;">' +
+        '<p> The study you participated in is interested in the role of prior experience in how you process sensory information. You tried your best to find and identify the thing(s) that we asked you to as quickly and accurately as you could. Other things that you were not looking for were also presented, and were there to try to distract you. Distraction can be measured from the speed and accuracy of your performance -- the more distracted you are by this other stuff, the less quickly and/or accurately you will be able to find and identify the thing you are looking for. Both the thing(s) you were looking for, and the thing(s) you were trying to ignore varied from trial-to-trial, in their color, location on the screen, shape, identity, etc. Even when you are not aware of it, your past experience with such variation can influence how you direct your attention to what is presented on the screen in the future. It is this influence of past experience on attention that we are interested in better understanding through this study.</p>' +
+        '<p></p>' +
+        '<p>The results of the study will help scientists to better understand how past experience shapes our current perceptual experience. The results also have implications for our understanding of perceptual biases that characterize different psychopathologies, such as addiction and ADHD.</p>',
+      choices: ['CONTINUE'],
+      button_html: ['<button class="jspsych-btn-agree">%choice%</button>'],
+      margin_vertical: '20px',
+      /* on_finish: function () {
+        creditToken += "https://tamupsychology.sona-systems.com/webstudy_credit.aspx?experiment_id=3239&credit_token=f7c126ce95cf49d8a0d039a13b6e0b5c&survey_code="
+        creditToken += surveyCode;
+
+      } */
+    });
+
+    timeline.push({
+      type: 'html-button-response',
+      choices: ['CLICK HERE'],
+      stimulus: 'Thank you for your participation!',
+      button_html: function () {
+        return `<a class="jspsych-btn-agree" type="button" onclick="window.open('${creditToken}', '_blank')">CLICK HERE TO RECEIVE CREDIT</a>`
+      },
+      margin_vertical: '20px'
+    });
+
+
+    jsPsych.init({
+      timeline: timeline,
+        on_finish: function () {
+          jsPsych.data.displayData();
+        }
+    });
+    
+    // If running locally
+    if (typeof jatos == "undefined") {
+      jsPsych.init({
+        timeline: timeline,
+        on_finish: function () {
+          jsPsych.data.displayData();
+        }
+      });
+
+    } else {
+
+    /*   // Initialize experiment (wrap with JATOS if managing data)
+      jatos.onLoad(function () {
+        surveyCode = jatos.urlQueryParameters.survey_id;
+        jsPsych.init({
+          timeline: timeline,
+          on_finish: function () {
+            let resultJson = JSON.stringify(jsPsych.data.get().values().filter(data => data.save === true));
+            jatos.submitResultData(resultJson, jatos.startNextComponent);
+          }
+        });
+      });*/
+    } 
+
+  </script>
+</body>
+
+</html>

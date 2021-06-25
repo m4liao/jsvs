@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Word Experiment</title>
+        <script src="../jspsych.js"></script>
+        <script src="../plugins/jspsych-html-keyboard-response.js"></script>
+        <script src="../plugins/jspsych-survey-text.js"></script>
+        <script src="../plugins/jspsych-image-keyboard-response.js"></script>
+        <link rel="stylesheet" href="../css/jspsych.css"></link>
+    </head>
+    
+    <body>
+    </body>
+    
+    
+    <script>       
+            var wordbank = [
+            ['cottage','swiss','cake','cheese'],
+            ['cream','skate','water','ice'],
+            ['loser','throat','spot','sore'],
+            ['show','life','row','boat'],            
+            ['night','wrist','stop','watch'],
+            ['duck','fold','dollar','bill'],
+            ['rocking','wheel','high','chair'],
+            ['dew','comb','bee','honey'],
+            ['fountain','baking','pop','soda'],
+            ['preserve','ranger','tropical','forest'],
+            ['aid','rubber','wagon','band'],
+            ['flake','mobile','cone','snow'],
+            ['cracker','fly','fighter','fire'],
+            ['safety','cushion','point','pin'],
+            ['cane','daddy','plum','sugar'],
+            ['dream','break','ight','day'],
+            ['fish','mine','rush','gold'],
+            ['political','surprise','line','party'],
+            ['measure','worm','video','tape'],
+            ['high','district','house','school'/'court'],
+            ['sense','courtesy','place','common'],
+            ['worm','shelf','end','book'],
+            ['piece','mind','dating','game'],
+            ['flower','friend','scout','girl'],
+            ['river','note','account','bank'],
+            ['print','berry','bird','blue'],
+            ['piece','luck','belly','pot'],
+            ['date','alley','fold','blind'],
+            ['opera','hand','dish','soap'],
+            ['cadet','capsule','ship','space'],
+            ['fur','rack','tail','coat'],
+            ['stick','maker','point','match'],
+            ['hound','pressure','shot','blood'],
+            ['fox','man','peep','hole'],
+            ['sleeping','bean','trash','bag'],
+            ['dust','cereal','fish','bowl'],
+            ['light','birthday','stick','candle'],
+            ['food','forward','break','fast'],
+            ['shine','beam','struck','moon'],
+            ['peach','arm','tar','pit'],
+            ['water','mine','shaker','salt'],
+            ['palm','shoe','house','tree'],
+            ['basket','eight','snow','ball'],
+            ['wheel','hand','shopping','cart'],
+            ['right','cat','carbon','copy'],
+            ['home','sea','bed','sick'],
+            ['nuclear','feud','album','family'],
+            ['sandwhich','house','golf','club'],
+            ['cross','rain','tie','bowl'],
+            ['sage','paint','hair','brush'],
+            ['french','car','shoe','horn'],
+            ['boot','summer','ground','camp'],
+            ['chamber','mask','natural','gas'],
+            ['mill','tooth','dust','saw'],
+            ['main','sweeper','light','street'],
+            ['pike','coat','signal','turn'],
+            ['office','mail','hat','box'],
+            ['fly','clip','wall','paper'],
+            ['age','mile','sand','stone'],
+            ['catcher','food','hot','dog'],
+            ['wagon','break','radio','station'],
+            ['tank','hill','secret','top'],
+            ['health','taker','less','care'],
+            ['lift','card','mask','face'],
+            ['dress','dial','flower','sun'],
+            ['force','line','mail','air'],
+            ['guy','rain','down','fall'],
+            ['eight','skate','stick','figure'],
+            ['down','question','check','mark'],
+            ['animal','back','rat','pack'],
+            ['officer','cash','larceny','petty'],
+            ['pine','crab','sauce','apple'],
+            ['house','thumb','pepper','green'],
+            ['carpet','alert','ink','red'],
+            ['master','toss','finger','ring'],
+            ['hammer','gear','hunter','head'],
+            ['knife','light','pal','pen'],
+            ['foul','ground','mate','play'],
+            ['change','circuit','cake','short'],
+            ['way','board','sleep','walk'],
+            ['blank','list','mate','check'],
+            ['tail','water','flood','gate'],
+            ['marshal','child','piano','grand'],
+            ['cover','arm','wear','under'],
+            ['rain','test','stomach','acid'],
+            ['time','blown','nelson','full'],
+            ['pile','market','room','stock'],
+            ['mouse','bear','sand','trap'],
+            ['catcher','number','phone','call'],
+            ['keg','puff','room','powder'],
+            ['trip','house','goal','field'],
+            ['fork','dark','man','pitch'],
+            ['fence','card','master','post'],
+            ['test','runner','map','road'],
+            ['dive','light','rocket','sky'],
+            ['man','glue','star','super'],
+            ['tooth','potato','heart','sweet'],
+            ['illness','bus','computer','terminal'],
+            ['type','ghost','screen','writer'],
+            ['mail','board','lunch','black'],
+            ['teeth','arrest','start','false'],
+            ['iron','shovel','engine','steam'],
+            ['wet','law','business','suit'],
+            ['rope','truck','line','tow'],
+            ['off','military','first','base'],
+            ['spoon','cloth','card','table'],
+            ['cut','cream','war','cold'],
+            ['note','chain','master','key'],
+            ['shock','shave','taste','after'],
+            ['wise','work','tower','clock'],
+            ['grass','king','meat','crab'],
+            ['baby','spring','cap','shower'],
+            ['break','bean','cake','coffee'],
+            ['cry','front','ship','battle'],
+            ['hold','print','stool','foot'],
+            ['roll','bean','fish','jelly'],
+            ['horse','human','drag','race'],
+            ['oil','bar','tuna','salad'],
+            ['bottom','curve','hop','bell'],
+            ['tomato','bomb','picker','cherry'],
+            ['peach','shell','chest','nut'],
+            ['line','fruit','drunk','punch'],
+            ['bump','egg','step','goose'],
+            ['fight','control','machine','gun'],
+            ['home','arm','room','rest'],
+            ['child','scan','wash','brain'],
+            ['nose','stone','bear','brown'],
+            ['end','line','lock','dead'],
+            ['control','place','rate','birth'],
+            ['lounge','hour','napkin','cocktail'],
+            ['artist','hatch','route','escape'],
+            ['pet','bottom','garden','rock'],
+            ['mate','shoes','total','running'],
+            ['self','attorney','spending','defense'],
+            ['board','blade','back','switch'],
+            ['land','hand','house','farm'],
+            ['hungry','order','belt','money'],
+            ['forward','flush','razor','straight'],
+            ['shadow','chart','drop','eye'],
+            ['way','ground','weather','fair'],
+            ['cast','side','jump','broad'],
+            ['back','step','screen','door'],
+            ['reading','service','stick','lip'],
+            ['over','plant','horse','power']
+        ]
+        
+        function shuffle(a) {
+            var j, x, i;
+            for (i = a.length - 1; i > 0; i--) {
+                j = Math.floor(Math.random() * (i + 1));
+                x = a[i];
+                a[i] = a[j];
+                a[j] = x;
+            }
+            return a;
+        }
+        
+        var shuffledwordbank = shuffle(wordbank);
+        
+        /* Instructions */
+        var instructionsPractice = {
+            type: 'html-keyboard-response',
+            stimulus: '<p>You will be shown three different words.</p>' +
+                '<p>Type in a word into the box that fits all three of the words and then press enter to submit.</p>' +
+                '<p>You will have 20 practice trials to become familiar with the experiment.</p>'+
+                '<p>Press the ENTER key to begin.</p>',
+            post_trial_gap: 1000
+        };
+
+        var instructionsTest = {
+            type: 'html-keyboard-response',
+            stimulus: '<p>The test will now commence.</p>'+
+                '<p>Press the ENTER key to begin.</p>',
+            post_trial_gap: 1000
+        };
+
+
+        var timeline = [
+            instructionsPractice,
+        ]
+            wordbank.forEach((row, index) => {
+            if (index < 10) {
+                timeline.push({
+                type: 'survey-text',
+                questions: [{
+                    prompt: `<p>THIS IS A PRACTICE TRIAL.</p> <p>Type out a word that fits the 3 displayed words. Then press enter to submit.</p> ${row.slice(0, 3).join(', ')}`,
+                    name: row[row.length - 1],
+                    required: true,
+                }]
+                }
+                )
+            
+                timeline.push({
+                    type: 'html-keyboard-response',
+                    stimulus: `ANSWER: ${row[3]}` +
+                    '<p>Press any key to continue.</p>',
+                    trial_duration: 2000         
+                })
+            
+            } else if (index == 10) {
+                timeline.push(instructionsTest)
+                /* push seperate text */
+
+            } else if (index > 10 && index < 120) {
+            
+                timeline.push({
+                    type: 'survey-text',
+                    questions: [{
+                    prompt: `<p>Type out a word that fits the 3 displayed words. Then press enter to submit.</p> ${row.slice(0, 3).join(', ')}`,
+                    name: row[row.length - 1],
+                    required: true,
+                    }]
+                })
+
+                timeline.push({
+                    type: 'html-keyboard-response',
+                    stimulus: 'BLANK',
+                    post_trial_gap: function(){
+                        return jsPsych.randomization.sampleWithoutReplacement([250, 500, 750, 1000, 1250, 1500, 1750, 2000], 1)[0];
+                    },
+                })
+
+            } else {      
+        }
+        })
+
+        jsPsych.init({
+            timeline: timeline,
+            on_finish: function() { jsPsych.data.displayData(); }
+        });
+    </script>
+</html>

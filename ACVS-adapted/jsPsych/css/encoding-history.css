@@ -1,0 +1,461 @@
+/*
+ * CSS for jsPsych experiments.
+ *
+ * This stylesheet provides minimal styling to make jsPsych
+ * experiments look polished without any additional styles.
+ */
+
+ @import url(https://fonts.googleapis.com/css?family=Open+Sans:400italic,700italic,400,700);
+
+/* Container holding jsPsych content */
+
+ .jspsych-display-element {
+   display: flex;
+   flex-direction: column;
+   overflow-y: auto;
+ }
+
+ .jspsych-display-element:focus {
+   outline: none;
+ }
+
+ .jspsych-content-wrapper {
+   display: flex;
+   margin: auto;
+   flex: 1 1 100%;
+   width: 100%;
+   background-color: #969696;
+ }
+
+ .jspsych-content {
+   max-width: 95%; /* this is mainly an IE 10-11 fix */
+   text-align: center;
+   margin: auto; /* this is for overflowing content */
+ }
+
+ .jspsych-top {
+   align-items: flex-start;
+ }
+
+ .jspsych-middle {
+   align-items: center;
+ }
+
+/* fonts and type */
+
+.jspsych-display-element {
+  font-family: 'Open Sans', 'Arial', sans-serif;
+  font-size: 24px;
+  line-height: 1.6em;
+  color: black;
+}
+
+/* Form elements like input fields and buttons */
+
+.jspsych-display-element input[type="text"] {
+  font-family: 'Open Sans', 'Arial', sans-serif;
+  font-size: 24px;
+}
+
+/* borrowing Bootstrap style for btn elements, but combining styles a bit */
+.jspsych-btn {
+  display: inline-block;
+  padding: 6px 12px;
+  margin: 0px;
+  font-size: 24px;
+  font-weight: 400;
+  font-family: 'Open Sans', 'Arial', sans-serif;
+  cursor: pointer;
+  line-height: 1.4;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  background-image: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #333;
+  background-color: #fff;
+  border-color: #ccc;
+  position: absolute;
+  right: 50px;
+  bottom: 50px;
+}
+
+.jspsych-btn-agree {
+  display: inline-block;
+  padding: 6px 12px;
+  margin: 0px;
+  font-size: 24px;
+  font-weight: 400;
+  font-family: 'Open Sans', 'Arial', sans-serif;
+  cursor: pointer;
+  line-height: 1.4;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  background-image: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #ccc;
+  background-color: #006400;
+  border-color: #ccc;
+}
+
+.jspsych-btn-decline {
+  display: inline-block;
+  padding: 6px 12px;
+  margin: 0px;
+  font-size: 24px;
+  font-weight: 400;
+  font-family: 'Open Sans', 'Arial', sans-serif;
+  cursor: pointer;
+  line-height: 1.4;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  background-image: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #ccc;
+  background-color: #B22222;
+  border-color: #ccc;
+}
+
+.jspsych-btn:hover {
+  background-color: #ddd;
+  border-color: #aaa;
+}
+
+.jspsych-btn:disabled {
+  background-color: #eee;
+  color: #aaa;
+  border-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* jsPsych progress bar */
+
+#jspsych-progressbar-container {
+  color: #555;
+  border-bottom: 1px solid #dedede;
+  background-color: #f9f9f9;
+  margin-bottom: 1em;
+  text-align: center;
+  padding: 8px 0px;
+  width: 100%;
+  line-height: 1em;
+}
+#jspsych-progressbar-container span {
+  font-size: 14px;
+  padding-right: 14px;
+}
+#jspsych-progressbar-outer {
+  background-color: #eee;
+  width: 50%;
+  margin: auto;
+  height: 14px;
+  display: inline-block;
+  vertical-align: middle;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+}
+#jspsych-progressbar-inner {
+  background-color: #aaa;
+  width: 0%;
+  height: 100%;
+}
+
+/* Control appearance of jsPsych.data.displayData() */
+#jspsych-data-display {
+  text-align: left;
+}
+
+.shapeParent {
+  position: relative;
+  width: 800px;
+  height: 800px;
+  font-size: 80px;
+  background-color: #969696;
+  color: black;
+  text-align: center;
+  display: table-cell;
+  vertical-align: middle;
+}
+
+.position0 {
+  position: absolute;
+  left: 200px;
+  top: 200px;
+  width: 100px;
+  height: 100px;
+  text-align: center;
+  line-height: 100px;
+  font-weight: bold;
+}
+
+.position1 {
+  position: absolute;
+  left: 500px;
+  top: 200px;
+  width: 100px;
+  height: 100px;
+  text-align: center;
+  line-height: 100px;
+  font-weight: bold;
+}
+
+.position2 {
+  position: absolute;
+  left: 200px;
+  top: 500px;
+  width: 100px;
+  height: 100px;
+  text-align: center;
+  line-height: 100px;
+  font-weight: bold;
+}
+
+.position3 {
+  position: absolute;
+  left: 500px;
+  top: 500px;
+  width: 100px;
+  height: 100px;
+  text-align: center;
+  line-height: 100px;
+  font-weight: bold;
+}
+
+.colorRed {
+  background-color: #969696;
+  color: #C80000;
+}
+
+.colorGreen {
+  background-color: #969696;
+  color: #00BE00;
+}
+
+.colorYellow {
+  background-color: #969696;
+  color: #C8C800;
+}
+
+.colorBlue {
+  background-color: #969696;
+  color: #0050FF;
+}
+
+.colorNeutral {
+  background-color: #969696;
+  color: black;
+}
+
+.feedbackTextBox {
+  background-color: #969696;
+  font-size: 40px;
+  color: black;
+  width: 800px;
+  height: 300px;
+  position: absolute;
+  left: 0px;
+  top: 150px;
+  line-height: 50px;
+  font-weight: bold;
+}
+
+.answerChoice0 {
+  background-color: #969696;
+  color: black;
+  width: 400px;
+  height: 100px;
+  position: absolute;
+  left: 400px;
+  top: 300px;
+  font-size: 40px;
+  text-align: left;
+}
+
+.answerChoice1 {
+  background-color: #969696;
+  color: black;
+  width: 400px;
+  height: 100px;
+  position: absolute;
+  left: 400px;
+  top: 400px;
+  font-size: 40px;
+  text-align: left;
+}
+
+.answerChoice2 {
+  background-color: #969696;
+  color: black;
+  width: 400px;
+  height: 100px;
+  position: absolute;
+  left: 400px;
+  top: 500px;
+  font-size: 40px;
+  text-align: left;
+}
+
+.answerChoice3 {
+  background-color: #969696;
+  color: black;
+  width: 400px;
+  height: 100px;
+  position: absolute;
+  left: 400px;
+  top: 600px;
+  font-size: 40px;
+  text-align: left;
+}
+
+.answerIdentity0 {
+  background-color: #969696;
+  color: black;
+  width: 50px;
+  height: 100px;
+  position: absolute;
+  left: 300px;
+  top: 300px;
+  text-align: left;
+  font-size: 40px;
+}
+
+.answerIdentity1 {
+  background-color: #969696;
+  color: black;
+  width: 50px;
+  height: 100px;
+  position: absolute;
+  left: 300px;
+  top: 400px;
+  text-align: left;
+  font-size: 40px;
+}
+.answerIdentity2 {
+  background-color: #969696;
+  color: black;
+  width: 50px;
+  height: 100px;
+  position: absolute;
+  left: 300px;
+  top: 500px;
+  text-align: left;
+  font-size: 40px;
+}
+.answerIdentity3 {
+  background-color: #969696;
+  color: black;
+  width: 50px;
+  height: 100px;
+  position: absolute;
+  left: 300px;
+  top: 600px;
+  text-align: left;
+  font-size: 40px;
+}
+
+.answerColor0 {
+  color: black;
+  width: 100px;
+  height: 80px;
+  position: absolute;
+  left: 250px;
+  top: 280px;
+  font-size: 40px;
+}
+
+.answerColor1 {
+  color: black;
+  width: 100px;
+  height: 80px;
+  position: absolute;
+  left: 250px;
+  top: 380px;
+  font-size: 40px;
+}
+
+.answerColor2 {
+  color: black;
+  width: 100px;
+  height: 80px;
+  position: absolute;
+  left: 250px;
+  top: 480px;
+  font-size: 40px;
+}
+
+.answerColor3 {
+  color: black;
+  width: 100px;
+  height: 80px;
+  position: absolute;
+  left: 250px;
+  top: 580px;
+  font-size: 40px;
+}
+
+.target {
+  border-style: dashed;
+  border-color: black;
+}
+
+.answerRed {
+  background-color: #C80000;
+}
+
+.answerBlue {
+  background-color: #0050FF;
+}
+
+.answerYellow {
+  background-color: #C8C800;
+}
+
+.answerGreen {
+  background-color: #00BE00;
+}
+
+.answerNeutral {
+  background-color: #969696;
+}
+
+.correctResponse {
+  background-color: #969696;
+  color: black;
+  font-size: 40px;
+  width: 200px;
+  height: 200px;
+  line-height: 20px;
+  position: absolute;
+  left: 100px;
+  top: 300px;
+  font-weight: bold;
+}
+
+.correctResponsePosition {
+  background-color: #969696;
+  color: black;
+  font-size: 40px;
+  width: 100px;
+  height: 50px;
+  line-height: 20px;
+  position: absolute;
+  left: 400px;
+  top: 70px;
+  font-weight: bold;
+}
+
+.correctResponseColor {
+  color: black;
+  font-size: 40px;
+  width: 50px;
+  height: 50px;
+  line-height: 20px;
+  position: absolute;
+  left: 90px;
+  top: -10px;
+  font-weight: bold;
+}

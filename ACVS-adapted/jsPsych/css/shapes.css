@@ -1,0 +1,35 @@
+.diamondTopNeutral {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 90px solid transparent;
+    border-right: 90px solid transparent;
+    border-bottom: 90px solid gray;
+}
+
+.diamondBotNeutral {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 90px solid transparent;
+    border-right: 90px solid transparent;
+    border-top: 90px solid gray;    
+}
+
+.diamondTopDistractor {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 90px solid transparent;
+    border-right: 90px solid transparent;
+    border-bottom: 90px solid red;    
+}
+
+.diamondBotDistractor {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 90px solid transparent;
+    border-right: 90px solid transparent;
+    border-top: 90px solid red;    
+}
