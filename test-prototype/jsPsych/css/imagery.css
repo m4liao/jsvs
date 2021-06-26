@@ -1,0 +1,295 @@
+/*
+ * CSS for jsPsych experiments.
+ *
+ * This stylesheet provides minimal styling to make jsPsych
+ * experiments look polished without any additional styles.
+ */
+
+ @import url(https://fonts.googleapis.com/css?family=Open+Sans:400italic,700italic,400,700);
+
+/* Container holding jsPsych content */
+
+ .jspsych-display-element {
+   display: flex;
+   flex-direction: column;
+   overflow-y: auto;
+ }
+
+ .jspsych-display-element:focus {
+   outline: none;
+ }
+
+ .jspsych-content-wrapper {
+   display: flex;
+   margin: auto;
+   flex: 1 1 100%;
+   width: 100%;
+   background-color: #000;
+ }
+
+ .jspsych-content {
+   max-width: 95%; /* this is mainly an IE 10-11 fix */
+   text-align: center;
+   margin: auto; /* this is for overflowing content */
+ }
+
+ .jspsych-top {
+   align-items: flex-start;
+ }
+
+ .jspsych-middle {
+   align-items: center;
+ }
+
+/* fonts and type */
+
+.jspsych-display-element {
+  font-family: 'Open Sans', 'Arial', sans-serif;
+  font-size: 24px;
+  line-height: 1.6em;
+  color: white;
+}
+
+/* Form elements like input fields and buttons */
+
+.jspsych-display-element input[type="text"] {
+  font-family: 'Open Sans', 'Arial', sans-serif;
+  font-size: 24px;
+}
+
+/* borrowing Bootstrap style for btn elements, but combining styles a bit */
+.jspsych-btn {
+  display: inline-block;
+  padding: 6px 12px;
+  margin: 0px;
+  font-size: 24px;
+  font-weight: 400;
+  font-family: 'Open Sans', 'Arial', sans-serif;
+  cursor: pointer;
+  line-height: 1.4;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  background-image: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #333;
+  background-color: #fff;
+  border-color: #ccc;
+  position: absolute;
+  right: 50px;
+  bottom: 50px;
+}
+
+.jspsych-btn-agree {
+  display: inline-block;
+  padding: 6px 12px;
+  margin: 0px;
+  font-size: 24px;
+  font-weight: 400;
+  font-family: 'Open Sans', 'Arial', sans-serif;
+  cursor: pointer;
+  line-height: 1.4;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  background-image: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #ccc;
+  background-color: #006400;
+  border-color: #ccc;
+}
+
+.jspsych-btn-decline {
+  display: inline-block;
+  padding: 6px 12px;
+  margin: 0px;
+  font-size: 24px;
+  font-weight: 400;
+  font-family: 'Open Sans', 'Arial', sans-serif;
+  cursor: pointer;
+  line-height: 1.4;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  background-image: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #ccc;
+  background-color: #B22222;
+  border-color: #ccc;
+}
+
+.jspsych-btn:hover {
+  background-color: #ddd;
+  border-color: #aaa;
+}
+
+.jspsych-btn:disabled {
+  background-color: #eee;
+  color: #aaa;
+  border-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* jsPsych progress bar */
+
+#jspsych-progressbar-container {
+  color: #555;
+  border-bottom: 1px solid #dedede;
+  background-color: #f9f9f9;
+  margin-bottom: 1em;
+  text-align: center;
+  padding: 8px 0px;
+  width: 100%;
+  line-height: 1em;
+}
+#jspsych-progressbar-container span {
+  font-size: 14px;
+  padding-right: 14px;
+}
+#jspsych-progressbar-outer {
+  background-color: #eee;
+  width: 50%;
+  margin: auto;
+  height: 14px;
+  display: inline-block;
+  vertical-align: middle;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+}
+#jspsych-progressbar-inner {
+  background-color: #aaa;
+  width: 0%;
+  height: 100%;
+}
+
+/* Control appearance of jsPsych.data.displayData() */
+#jspsych-data-display {
+  text-align: left;
+}
+
+.shapeParent {
+    position: relative;
+    width: 800px;
+    height: 800px;
+    background-color: black;
+}
+
+.dot {
+    position: absolute;
+    height: 25px;
+    width: 25px;
+    border-radius: 25px;
+    background-color: black;
+}
+
+.pos1 {
+    left: 325px;
+    top: 55px;
+}
+
+.pos2 {
+    left: 595px;
+    top: 325px;
+}
+
+.pos3 {
+    left: 325px;
+    top: 595px;
+}
+
+.pos4 {
+    left: 55px;
+    top: 325px;
+}
+
+.pos01 {
+    left: 337px;
+    top: 67px;
+}
+
+.pos02 {
+    left: 607px;
+    top: 337px;
+}
+
+.pos03 {
+    left: 337px;
+    top: 607px;
+}
+
+.pos04 {
+    left: 67px;
+    top: 337px;
+}
+
+.posDotLeft1 {
+    left: 347.5px;
+    top: 117.5px;
+}
+
+.posDotLeft2 {
+    left: 617.5px;
+    top: 387.5px;
+}
+
+.posDotLeft3 {
+    left: 347.5px;
+    top: 657.5px;
+}
+
+.posDotLeft4 {
+    left: 77.5px;
+    top: 387.5px;
+}
+
+.posDotRight1 {
+    left: 427.5px;
+    top: 117.5px;
+}
+
+.posDotRight2 {
+    left: 697.5px;
+    top: 387.5px;
+}
+
+.posDotRight3 {
+    left: 427.5px;
+    top: 657.5px;
+}
+
+.posDotRight4 {
+    left: 157.5px;
+    top: 387.5px;
+}
+
+.circle {
+    position: absolute;
+    height: 150px;
+    width: 150px;
+    border-radius: 150px;
+}
+
+.diamond {
+    position: absolute;
+    height: 125px;
+    width: 125px;
+    transform: rotate(45deg);
+}
+
+.colorRed {
+    background-color: red;
+}
+
+.colorGreen {
+    background-color: #00DC00;
+}
+
+.colorBlue {
+    background-color: #007FFF;
+}
+
+.colorYellow {
+    background-color: #F0F000;
+}

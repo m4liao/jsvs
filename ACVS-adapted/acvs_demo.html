@@ -19,8 +19,6 @@
     // CHANGE EXPERIMENT PARAMETERS //
     // configs that have been done: (red, 0), (red, 2)
     const optimalColor = 'red';
-    const optimalQuadrant = 1;
-    const nonOptimalQuadrant = [0, 2, 3];
     const quadrants = [0, 1, 2, 3];
 
     //////////////////////////////////
@@ -955,7 +953,7 @@
           setTimeout(() => { document.getElementById("obfuscator").style.visibility = "hidden" }, 0)
         },
         choices: [90, 88, 78, 77],
-        trial_duration: 5500
+        trial_duration: 5550
       });
 
       trainNodeB.timeline.push({
@@ -1045,7 +1043,6 @@
             setTimeout(() => { document.getElementById("obfuscator").style.visibility = "hidden" }, 50)
           },
         choices: [90, 88, 78, 77],
-        //trial_duration: 5500
       });
 
       timelineTest.push({
@@ -1245,14 +1242,14 @@
       type: 'html-button-response',
       stimulus: `<p style="font-size: 30px; color:#f0e68c;">DO NOT EXIT OR LEAVE YOUR BROWSER YET, READ AND CONTINUE</p>` +
         '<div style="position: relative; margin: auto; width: 1000px; height: 600px; background-color:black; overflow: scroll;text-align: left;">' +
-        '<p> The study you participated in is interested in the role of prior experience in how you process sensory information. You tried your best to find and identify the thing(s) that we asked you to as quickly and accurately as you could. Other things that you were not looking for were also presented, and were there to try to distract you. Distraction can be measured from the speed and accuracy of your performance -- the more distracted you are by this other stuff, the less quickly and/or accurately you will be able to find and identify the thing you are looking for. Both the thing(s) you were looking for, and the thing(s) you were trying to ignore varied from trial-to-trial, in their color, location on the screen, shape, identity, etc. Even when you are not aware of it, your past experience with such variation can influence how you direct your attention to what is presented on the screen in the future. It is this influence of past experience on attention that we are interested in better understanding through this study.</p>' +
+        '<p> The study you participated in is interested in blah blah blah debriefing stuff.</p>' +
         '<p></p>' +
         '<p>The results of the study will help scientists to better understand how past experience shapes our current perceptual experience. The results also have implications for our understanding of perceptual biases that characterize different psychopathologies, such as addiction and ADHD.</p>',
       choices: ['CONTINUE'],
       button_html: ['<button class="jspsych-btn-agree">%choice%</button>'],
       margin_vertical: '20px',
       /* on_finish: function () {
-        creditToken += "https://tamupsychology.sona-systems.com/webstudy_credit.aspx?experiment_id=3239&credit_token=f7c126ce95cf49d8a0d039a13b6e0b5c&survey_code="
+        creditToken += ""
         creditToken += surveyCode;
 
       } */
