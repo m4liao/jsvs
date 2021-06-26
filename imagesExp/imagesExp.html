@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <script src="jatos.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
+    crossorigin="anonymous"></script>
+  <script src="jspsych/jspsych.js"></script>
+  <script src="jspsych/plugins/jspsych-html-keyboard-response.js"></script>
+  <script src="jspsych/plugins/jspsych-preload.js"></script>
+  <script src="jspsych/plugins/jspsych-html-button-response.js"></script>
+  <script src="jspsych/plugins/jspsych-html-slider-response.js"></script>
+  <script src="jspsych/plugins/jspsych-survey-multi-choice.js"></script>
+  <script src="jspsych/plugins/jspsych-survey-multi-select.js"></script>
+  <script src="jspsych/plugins/jspsych-survey-text.js"></script>
+  <script src="jspsych/plugins/jspsych-fullscreen.js"></script>
+  <script src="functions/helperFunctions.js"></script>
+  <script src="functions/customPlugin.js"></script>
+  <link rel="stylesheet" href="jspsych/css/jspsych.css">
+
+</head>
+
+<body>
+  <script>
+    // Get path for images
+    async function getData() {
+      const result = $.getJSON('images/database.json', function (data) {
+        return data
+      });
+      return result
+    };
+
+    // Define experiment parameters
+    const runExperiment = (async () => {
+      let surveyCode = '';
+      let creditToken = '';
+
+      const numTrials = 10;
+
+      // Initialize containers
+      let database = {};
+
+      // Timeline variables
+      let timeline = [];
+      let timelineIntro = [];
+      let timelineTraining = [];
+      let timelineTest = [];
+      let timelineOutro = [];
+
+      // Get database information
+      await getData().then(data => database = data)
+
+      /// BEGIN PRELOADING
+      // Specify trial for preloading images
+      let preload_trial = {
+        type: 'preload',
+        message: '<p>Please wait while the experiment loads.</p><p>This should only take up to 5 minutes depending on your connection.</p>',
+        auto_preload: true,
+        show_progress_bar: true,
+        max_load_time: 300000,
+        show_detailed_errors: true,
+        images: []
+      }
+
+      // Initialize preloading array
+      let imagesToBePreloaded = [];
+
+      let database_keys = Object.keys(database);
+      for (let i = 0; i < database_keys.length; i++) {
+        let tempPathRoot = database[database_keys[i]].path;
+        tempPathRoot = tempPathRoot.replace("/mnt/c/jatos_win_java/jatos_win_java/study_assets_root/imagesExp/", "");
+
+        // Cycle through folders
+        for (let j = 0; j < database[database_keys[i]].folders.length; j++) {
+          let folder = database[database_keys[i]].folders[j];
+          for (let k = 0; k < folder.files.length; k++) {
+            let file = folder.files[k];
+            let finalPath = tempPathRoot + "/" + folder.name + "/" + file
+            imagesToBePreloaded.push(finalPath);
+          }
+        }
+      }
+
+      preload_trial.images = preload_trial.images.concat(imagesToBePreloaded);
+
+      /// END PRELOADING
+
+      // BEGIN EXPERIMENT PARAMETERS
+      // Create experiment parameters and counterbalancing
+      let locationLog = [];
+      for (let i = 0; i < 2; i++) { // dot side
+        for (let j = 0; j < 4; j++) { // total locations
+          for (let k = 0; k < 48; k++) { // total number of each condition
+            let tempObj = {};
+            tempObj.Tdirection = i * 180 - 90;
+            tempObj.targetLocation = j;
+            locationLog.push(tempObj);
+          }
+        }
+      }
+      locationLog = shuffle(locationLog);
+
+      let trialConditions = [];
+      for (let i = 0; i < 2; i++) { // cycle through the folder (images1 and images2)
+        database[database_keys[i]].folders = shuffle(database[database_keys[i]].folders);
+
+        if (i == 0) { //
+          for (let j = 0; j < 64; j++) { // cycle through each folder (categories)
+            database[database_keys[i]].folders[j].files = shuffle(database[database_keys[i]].folders[j].files);
+            let objects = database[database_keys[i]].folders[j].files.splice(0, 3);
+            for (let k = 0; k < 3; k++) {
+              let tempObj = {
+                trialType: "",
+                image: "images/images1/" + database[database_keys[i]].folders[j].name + "/" + objects[k],
+                category: database[database_keys[i]].folders[j].name
+              };
+              trialConditions.push(tempObj);
+            }
+          }
+
+          trialConditions = shuffle(trialConditions);
+          console.log(trialConditions)
+
+        } else if (i == 1) {
+          let tempCategories = []; // create object to select category for search array images
+          for (let j = 0; j < 64; j++) { // cycle through each folder
+            let tempFolder = [];
+            for (let k = 0; k < 3; k++) {
+              tempFolder = tempFolder.concat(database[database_keys[i]].folders[j].files);
+              for (let l = 0; l < 6; l++) {
+                tempCategories = tempCategories.concat(database[database_keys[i]].folders[j].name);
+              }
+            }
+            tempFolder.forEach((item, index, array) => {
+              array[index] = "images/images2/" + database[database_keys[i]].folders[j].name + "/" + item
+            });
+            tempFolder = shuffle(tempFolder);
+            database[database_keys[i]].folders[j].files = tempFolder;
+          }
+          tempCategories = shuffle(tempCategories);
+          let balanced = false;
+          do {
+            let countBalance = 0;
+            for (let j = 0; j < numTrials; j++) {
+              let k = j * 3;
+              if (!(tempCategories[k] == tempCategories[k + 1] && tempCategories[k] == tempCategories[k + 2])) {
+                countBalance += 1;
+              }
+            }
+            if (countBalance == numTrials) {
+              balanced = true
+            } else {
+              tempCategories = shuffle(tempCategories);
+            }
+          }
+          while (balanced === false)
+
+          let duplicates = true;
+
+          do {
+            let databaseCopy = JSON.parse(JSON.stringify(database));
+            for (let j = 1; j < 2; j++) {
+              for (let k = 0; k < 64; k++) {
+                databaseCopy[database_keys[j]].folders[k].files = shuffle(databaseCopy[database_keys[j]].folders[k].files);
+              }
+            }
+            let tempCategoriesCopy = [...tempCategories];
+
+            let countDuplicates = 0;
+
+            for (let j = 0; j < numTrials; j++) { // cycle through each trial
+              // initialize temporary objects
+              let tempArray = [undefined, undefined, undefined, undefined];
+              let tempRotations = [undefined, undefined, undefined, undefined];
+              let tempT = shuffle([0, 0, 180, 180]).splice(0, 3); // pick random orientations for distactors  
+
+              tempArray[locationLog[j].targetLocation] = trialConditions[j].image;
+              tempRotations[locationLog[j].targetLocation] = locationLog[j].Tdirection; // save target rotation
+              for (let k = 0; k < 4; k++) { // check each location
+                if (tempArray[k] == undefined) {
+                    tempArray[k] = databaseCopy.images2.folders.filter(folder => folder.name == tempCategoriesCopy[0])[0].files.splice(0, 1
+                    )[0];
+                    tempCategoriesCopy.splice(0, 1)[0];
+                }
+                if (tempRotations[k] == undefined) {
+                    tempRotations[k] = tempT.splice(0, 1)[0];
+                }
+              }
+
+              if (hasDuplicates(tempArray)) { // add to duplicate counter if there are duplicates in search array
+                countDuplicates += 1;
+              }
+
+              // add generated conditions to trial conditions array
+              if (locationLog[j].Tdirection == 90) {
+                trialConditions[j].answer = "m"
+              } else {
+                trialConditions[j].answer = "z"
+              }
+
+              trialConditions[j].stim = tempArray; // save generated trial conditions
+              trialConditions[j].rotations = tempRotations; // save generated rotation conditions
+            }
+
+            if (countDuplicates == 0) { // if no duplicates, set flag to false and lock in experiment parameters
+              duplicates = false
+            }
+          }
+          while (duplicates == true) // redo counterbalance while diplicates remain 
+        }
+      }
+
+      let trainConditions = [];
+
+      let trainCount = [4];
+      let trainTotal = trainCount.reduce(function (accumulator, currentValue) {
+        return accumulator + currentValue
+      }, 0);
+
+      let tempCategories = [];
+      let indexSelection = [];
+
+      for (let i = 0; i < numTrials; i++) {
+        indexSelection.push(i);
+      }
+
+      for (let i = 0; i < trainTotal; i++) {
+        let selected = true;
+        let indexToBeSelected;
+        if (i < trainCount[0]) {
+          do {
+            indexToBeSelected = shuffle(indexSelection).slice(0, 1)[0];
+            if (!tempCategories.includes(trialConditions[indexToBeSelected].category)) {
+              selected = false
+            }
+          }
+          while (selected == true)
+          trainConditions = trainConditions.concat(trialConditions[indexToBeSelected])
+        }
+      }
+
+      let breakStart = {
+        type: 'html-keyboard-response',
+        stimulus: function () {
+          return generateScaledHTML('<p>Take a short break.</p><p>Press either the Z or M keys to resume early.</p>' +
+            '<div id="timer"></div>')
+        },
+        choices: ['z', 'm'],
+        on_load: function () {
+          let timeLeft = 29;
+          let elem = document.getElementById('timer');
+
+          let timerId = setInterval(countdown, 1000);
+
+          function countdown() {
+            if (timeLeft == -1) {
+              clearTimeout(timerId);
+            } else {
+              elem.innerHTML = timeLeft + ' seconds remaining';
+              timeLeft--;
+            }
+          }
+        },
+        trial_duration: 30000
+      };
+
+      let breakEnd = {
+        type: 'html-keyboard-response',
+        stimulus: function () { return generateScaledHTML('Resuming in 2 seconds, get ready!') },
+        choices: jsPsych.NO_KEYS,
+        trial_duration: 2000
+      }
+
+      // END EXPERIMENT PARAMETERS
+
+      // BEGIN EXPERIMENT CONSTRUCTION
+      // Intro phase
+
+      let webStudy = {
+        type: 'html-button-response',
+        choices: ['AGREE TO PARTICIPATE', 'DECLINE TO PARTICIPATE'],
+        stimulus: '<p style="font-size: 30px; font-weight: bold; color:#000000;">PLEASE READ ALL OF THE FOLLOWING</p>' +
+          '<div style="position: relative; margin: auto; background-color:white; overflow: scroll;text-align: left;">' +
+          '<p>This is a study conducted by Brian A. Anderson, PhD, a researcher from Texas A&M University and his research staff. The information in this form is provided to help you decide whether or not to take part. If you decide you do not want to participate, there will be no penalty to you, and you will not lose any benefits you normally would have.</p>' +
+          '<p></p>' +
+          '<p style="font-weight: bold; color:#000000;">Why is this study being done?</p>' +
+          '<p>The purpose of this study is to understand how you perceive sensory information such as visual images and sounds.</p>' +
+          '<p></p>' +
+          '<p style="font-weight: bold; color:#000000;">Am I eligible to participate?</p>' +
+          '<p>To be eligible to participate in this study, you must fulfill the following inclusion criteria. If you do not fulfil these criteria, please decline to participate:</p>' +
+          '<p>&ensp;- You are between the ages of 18 and 35, inclusive</p>' +
+          '<p>&ensp;- You speak English</p>' +
+          '<p>&ensp;- You have normal or corrected-to-normal (glasses or contacts) visual acuity</p>' +
+          '<p>&ensp;- You have normal color vision</p>' +
+          '<p></p>' +
+          '<p style="font-weight: bold; color:#000000;">How many people will be asked to be in this study?</p>' +
+          '<p>Approximately 4,000 people (participants) will participate in this study.</p>' +
+          '<p></p>' +
+          '<p style="font-weight: bold; color:#000000;">What are the alternatives to being in this study?</p>' +
+          '<p>The alternative to being in the study is not to participate.</p>' +
+          '<p></p>' +
+          '<p style="font-weight: bold; color:#000000;">What will I be asked to do in this study?</p>' +
+          '<p>In this study, you will perform a computer task (like a very simplified video game). In this computer task, different objects will be presented on your computer screen. You will be asked to press buttons on your keyboard to identify particular objects while doing your best to ignore other objects. You may also be asked to fill out some surveys that gather information about how you act, think, and feel in different situations. The study involves a single session lasting approximately 1 hr.</p>' +
+          '<p></p>' +
+          '<p style="font-weight: bold; color:#000000;">Are there any risks to me?</p>' +
+          '<p>The things that you will be doing are of no more risk than you would come across in everyday life. The computer tasks and surveys we will ask you to complete are sometimes boring. You may feel fatigued from completing the surveys or computer task, and you may experience dryness of the eyes from looking at images on a computer screen for up to 1 hour. To minimize this, we provide breaks in which you may rest your eyes, and you will be able to complete the questionnaires at your own pace. You will be assigned a code should you agree to participate, and the study code will be the only identifying information used for the study documents. Only the investigators will have access to the study information. Although the researchers have tried to avoid risks, you may feel that some questions/procedures that are asked of you will be stressful or upsetting. You do not have to answer anything you do not want to.</p>' +
+          '<p></p>' +
+          '<p style="font-weight: bold; color:#000000;">Will there be any costs to me?</p>' +
+          '<p>Aside from your time, there are no costs for taking part in the study.</p>' +
+          '<p></p>' +
+          '<p style="font-weight: bold; color:#000000;">Will I be compensated for my time?</p>' +
+          '<p>Research credit will be awarded at a rate of 1 credit per half-hour of time participated.</p>' +
+          '<p></p>' +
+          '<p style="font-weight: bold; color:#000000;">Will information from this study be kept private?</p>' +
+          '<p>The records of this study will be kept private. Your identity will not be linked to the information you provide as a part of your participation.</p>' +
+          '<p></p>' +
+          '<p style="font-weight: bold; color:#000000;">Who may I contact for more information?</p>' +
+          '<p>You may contact the Principal Investigator, Brian A. Anderson, PhD, to tell him about a concern or complaint about this research at 979-458-0168 or brian.anderson@tamu.edu. For questions about your rights as a research participant, to provide input regarding research, or if you have questions, complaints, or concerns about the research, you may call the Texas A&M University Human Subjects Protection Program office by phone at 1-979-458-4067, toll free at 1-855-795-8636, or by email at irb@tamu.edu.</p>' +
+          '<p></p>' +
+          '<p style="font-weight: bold; color:#000000;">What if I Change My Mind About Participating?</p>' +
+          '<p>This research is voluntary and you have the choice whether or not to be in this research study. You may decide to not begin or to stop participating at any time. To stop participant after the computer task has started, either press the escape key or exit your browser using your computer’s task manager.  If you choose not to be in this study or stop being in the study, there will be no effect on your student status, medical care, employment, evaluation, relationship with Texas A&M University, etc.</p>' +
+          '<p></p>' +
+          'If you would like to retain a copy of this information sheet, you may copy-paste it into a savable document or use the print screen function on your computer to capture an image of it.' +
+          '</div>',
+        button_html: ['<button class="jspsych-btn-agree">%choice%</button>', '<button class="jspsych-btn-decline">%choice%</button>'],
+        margin_vertical: '20px',
+        post_trial_gap: 1000,
+        data: { intro: 'web study' },
+        on_finish: function () {
+          var data = jsPsych.data.get().last(1).values()[0]
+          if (data.button_pressed == 1) {
+            jsPsych.endExperiment('The subject has declined to participate.');
+          };
+        }
+      };
+
+      timelineIntro.push(webStudy);
+
+      timelineIntro.push(preload_trial);
+
+      timelineIntro.push({
+        type: 'fullscreen',
+        message: function () { return generateScaledHTML('<p>Success!</p><p>The experiment will switch to full screen mode when you press the button below.</p>') },
+        on_finish: function () {
+          document.getElementsByClassName('jspsych-content-wrapper')[0].style.cursor = "none";
+          let idleCount = 0;
+          function idleCheck() {
+            if (idleCount == 3) {
+              document.getElementsByClassName('jspsych-content-wrapper')[0].style.cursor = "none";
+              idleCount = 0;
+            };
+            idleCount += 1;
+          };
+
+          $(document).mousemove(function () {
+            document.getElementsByClassName('jspsych-content-wrapper')[0].style.cursor = "auto";
+            idleCount = 0;
+            clearInterval(idle);
+            idle = setInterval(idleCheck, 500);
+          });
+          idle = setInterval(idleCheck, 500);
+        }
+      });
+
+      // Create demographic questionnaire (split response type into different sections)
+      let questionnaire_0 = {
+        type: 'survey-text',
+        questions: [
+          { prompt: "How old are you?", required: true }
+        ],
+        data: { questionnaire: 0, save: true },
+        preamble: '<p style="font-weight: bold; color:#000000;">The following information will help us to interpret the data gathered during our research and determine for which of our studies you may be eligible:</p>'
+      };
+
+      let page_1_options = ["Right", "Left"];
+      let page_2_options = ["Yes (Normal)", "Yes (Corrected)", "No"];
+      let page_3_options = ["Yes", "No"];
+
+      let questionnaire_1 = {
+        type: 'survey-multi-choice',
+        questions: [
+          { prompt: "Handedness", options: page_1_options, required: true },
+          { prompt: "Do you have normal or corrected-to-normal vision?", options: page_2_options, required: true },
+          { prompt: "If corrected-to-normal, do you have contacts you can wear comfortably?", options: page_3_options, required: false }
+        ],
+        data: { questionnaire: 1, save: true },
+        on_load: function () {
+          let options = document.getElementsByClassName("jspsych-survey-multi-choice-text");
+          for (let i = 0; i < options.length; i++) {
+            options[i].style.textAlign = "center";
+          };
+          let title = document.getElementsByClassName("jspsych-survey-multi-choice-option");
+          for (let i = 0; i < title.length; i++) {
+            title[i].style.textAlign = "center";
+          }
+        }
+      };
+
+      let page_4_options = ["Female", "Male", "No Response"];
+      let page_5_options = ["Hispanic or Latino", "Not Hispanic or Latino", "No Response"];
+
+      let questionnaire_2 = {
+        type: 'survey-multi-choice',
+        questions: [
+          { prompt: "Gender", options: page_4_options, required: true, horizontal: true },
+          { prompt: "Ethnic Category", options: page_5_options, required: true, horizontal: true }
+        ],
+        data: { questionnaire: 2, save: true },
+        preamble: '<p style="font-weight: bold; color:#000000;">The National Institutes of Health (NIH) requests information on the gender, racial, and ethnic composition of the participants of studies it sponsors. This information is collected to ensure that the results of this study can be generalized to the population as a whole and do not exclude any ethnic or gender groups. You do not have to respond to these questions to participate in experiments in the lab. If you choose to respond, please check the relevant boxes below:</p>',
+        on_load: function () {
+          let options = document.getElementsByClassName("jspsych-survey-multi-choice-option");
+          for (let i = 0; i < options.length; i++) {
+            options[i].style.textAlign = "center";
+          };
+          let title = document.getElementsByClassName("jspsych-survey-multi-choice-horizontal");
+          for (let i = 0; i < title.length; i++) {
+            title[i].style.textAlign = "center";
+          }
+        }
+      };
+
+      let page_6_options = ["American Indian/Alaskan Native", "Asian", "Native Hawaiian or Other Pacific Islander", "Black or African Americans", "White", "No response"];
+
+      let questionnaire_3 = {
+        type: 'survey-multi-select',
+        questions: [
+          {
+            prompt: "Racial Categories (Check all that apply)",
+            options: page_6_options,
+            required: true
+          }
+        ],
+        data: { questionnaire: 3, save: true }
+      };
+
+      timelineIntro.push(questionnaire_0);
+      timelineIntro.push(questionnaire_1);
+      timelineIntro.push(questionnaire_2);
+      timelineIntro.push(questionnaire_3);
+
+      // Training phase
+      timelineTraining.push({
+        type: 'html-keyboard-response',
+        stimulus: function () {
+          return generateScaledHTML('<p>Before we start the experiment, you will perform parts of the experiment to become familiar.</p>' +
+            '<p>Please keep your experiment in full-screen mode until completion.</p>' +
+            '<p>Press either the Z or M key to continue.</p>')
+        },
+        choices: ['z', 'm']
+      });
+
+      let trainNode0 = {
+        timeline: [],
+        loop_function: function (data) {
+          let lastTrial = jsPsych.data.get().last(1).values()[0];
+          return lastTrial.response == "m"
+        }
+      }
+
+      trainNode0.timeline.push({
+        type: 'html-keyboard-response',
+        stimulus: function () {
+          return generateScaledHTML('<p>You will be shown an array of 4 images, with the letter "T" overlayed on each of them.</p>' +
+            '<p>Each "T" might be rotated to become upright, sideways, or upside down.</p>' +
+            '<p>Only one "T" will be rotated sideways.</p>' +
+            '<p>Your task is to identify the sideways "T" and then report the direction it is rotated.</p>' +
+            '</br>' +
+            '<p>Press either "Z" or "M" on the keyboard to continue.</p>')
+        },
+        choices: ['z', 'm']
+      }, {
+        type: 'html-keyboard-response',
+        stimulus: function () {
+          return generateScaledHTML(
+            '<div style="position: relative; width: 900px; height: 800px; background-color: white;">' +
+            '<div style="position: absolute; width: 700px; height: 200px; left: 200px; top: 0px; background-color: white;"></div>' +
+            '<div style="position: absolute; width: 200px; height: 300px; left: 0px; top: 100px; background-color: white; font-size: 30px; line-height: 40px; display: flex; justify-content: center; align-items: center;"><p>For these rotations (example)</p></div>' +
+            '<div style="position: absolute; width: 200px; height: 200px; left: 0px; top: 400px; background-color: white; font-size: 30px; line-height: 40px; display: flex; justify-content: center; align-items: center;"><p>Press these keys</p></div>' +
+            '<div style="position: absolute; width: 700px; height: 300px; left: 200px; top: 100px; background-color: white; display: flex; justify-content: space-around; align-items: center">' +
+            '<div style="width: 200px; height: 200px; font-size: 200px; line-height: 200px; text-align: center;font-weight: bold;-webkit-text-fill-color: white; /* Will override color (regardless of order) */-webkit-text-stroke-width: 4px;-webkit-text-stroke-color: black; transform: rotate(-90deg);">T</div>' +
+            '<div style="width: 200px; height: 200px; font-size: 200px; line-height: 200px; text-align: center;font-weight: bold;-webkit-text-fill-color: white; /* Will override color (regardless of order) */-webkit-text-stroke-width: 4px;-webkit-text-stroke-color: black; transform: rotate(90deg);">T</div>' +
+            '</div>' +
+            '<div style="position: absolute; width: 700px; height: 200px; left: 200px; top: 400px; background-color: white; display: flex; justify-content: space-around; align-items: center">' +
+            '<div style="font-size: 80px; line-height: 120px; width: 120px; height: 120px; border-style: dashed; border-width: 2px; border-color: black; background-color: white; color: black;">Z</div>' +
+            '<div style="font-size: 80px; line-height: 120px; width: 120px; height: 120px; border-style: dashed; border-width: 2px; border-color: black; background-color: white; color: black;">M</div>' +
+            '</div>' +
+            '<div style="position: absolute; width: 50px; height: 300px; left: 210px; top: 100px; background-color: white;"></div>' +
+            '<div style="position: absolute; width: 50px; height: 300px; left: 840px; top: 100px; background-color: white;"></div>' +
+            '</div>'
+          )
+        },
+        choices: jsPsych.NO_KEYS,
+        trial_duration: 1000
+      }, {
+        type: 'html-keyboard-response',
+        stimulus: function () {
+          return generateScaledHTML(
+            '<div style="position: relative; width: 900px; height: 800px; background-color: white;">' +
+            '<div style="position: absolute; width: 700px; height: 200px; left: 200px; top: 0px; background-color: white;"></div>' +
+            '<div style="position: absolute; width: 200px; height: 300px; left: 0px; top: 100px; background-color: white; font-size: 30px; line-height: 40px; display: flex; justify-content: center; align-items: center;"><p>For these rotations (example)</p></div>' +
+            '<div style="position: absolute; width: 200px; height: 200px; left: 0px; top: 400px; background-color: white; font-size: 30px; line-height: 40px; display: flex; justify-content: center; align-items: center;"><p>Press these keys</p></div>' +
+            '<div style="position: absolute; width: 700px; height: 300px; left: 200px; top: 100px; background-color: white; display: flex; justify-content: space-around; align-items: center">' +
+            '<div style="width: 200px; height: 200px; font-size: 200px; line-height: 200px; text-align: center;font-weight: bold;-webkit-text-fill-color: white; /* Will override color (regardless of order) */-webkit-text-stroke-width: 4px;-webkit-text-stroke-color: black; transform: rotate(-90deg);">T</div>' +
+            '<div style="width: 200px; height: 200px; font-size: 200px; line-height: 200px; text-align: center;font-weight: bold;-webkit-text-fill-color: white; /* Will override color (regardless of order) */-webkit-text-stroke-width: 4px;-webkit-text-stroke-color: black; transform: rotate(90deg);">T</div>' +
+            '</div>' +
+            '<div style="position: absolute; width: 700px; height: 200px; left: 200px; top: 400px; background-color: white; display: flex; justify-content: space-around; align-items: center">' +
+            '<div style="font-size: 80px; line-height: 120px; width: 120px; height: 120px; border-style: dashed; border-width: 2px; border-color: black; background-color: white; color: black;">Z</div>' +
+            '<div style="font-size: 80px; line-height: 120px; width: 120px; height: 120px; border-style: dashed; border-width: 2px; border-color: black; background-color: white; color: black;">M</div>' +
+            '</div>' +
+            '<div style="position: absolute; width: 50px; height: 300px; left: 210px; top: 100px; background-color: white;"></div>' +
+            '<div style="position: absolute; width: 50px; height: 300px; left: 840px; top: 100px; background-color: white;"></div>' +
+            '<p style="position: absolute; width: 100%; top: 600px; left: 0px; text-align: center; font-size: 30px;">Press either "Z" or "M" on the keyboard once you understand these instructions.</p>' +
+            '</div>'
+          )
+        },
+        choices: ['z', 'm']
+      });
+
+      for (let i = 0; i < 2; i++) {
+        trainNode0.timeline.push({
+          type: 'html-keyboard-response',
+          stimulus: function () {
+            return generateScaledHTML(
+              `<p style="font-size: 80px;">+</p>`
+            )
+          },
+          trial_duration: function () {
+            return shuffle([400, 450, 500, 550, 600]).splice(0, 1)[0]
+          },
+          choices: jsPsych.NO_KEYS
+        }, {
+          type: 'html-keyboard-response',
+          stimulus: '',
+          trial_duration: 150,
+          choices: jsPsych.NO_KEYS
+        }, {
+          type: 'html-keyboard-response',
+          stimulus: function () {
+            return generateStimulus(trainConditions[i].stim, trainConditions[i].rotations)
+          },
+          on_load: function () {
+            document.getElementById("jspsych-html-keyboard-response-stimulus").style.minWidth = 900;
+            setTimeout(() => { document.getElementById("obfuscator").style.visibility = "hidden" }, 50)
+          },
+          choices: ["z", "m"]
+        }, {
+          type: 'html-keyboard-response',
+          stimulus: function () {
+            let lastTrial = jsPsych.data.get().last(1).values()[0];
+            if (lastTrial.rt == null) {
+              return generateScaledHTML(`<p style="font-size: 60px;">TOO SLOW</p>`)
+            } else if (lastTrial.response !== trainConditions[i].answer) {
+              return generateScaledHTML(`<p style="font-size: 60px;">INCORRECT</p>`)
+            } else {
+              return generateScaledHTML(`<p style="font-size: 60px;">CORRECT</p>`)
+            }
+          },
+          trial_duration: function () {
+            let lastTrial = jsPsych.data.get().last(1).values()[0];
+            if (lastTrial.rt == null) {
+              return 1200
+            } else if (lastTrial.response !== trainConditions[i].answer) {
+              return 1200
+            } else {
+              return 1200
+            }
+          },
+          choices: jsPsych.NO_KEYS
+        }, {
+          type: 'html-keyboard-response',
+          stimulus: '',
+          choices: jsPsych.NO_KEYS,
+          trial_duration: function () {
+            return shuffle([500, 550, 600, 650, 700]).splice(0, 1)[0]
+          }
+        });
+      }
+
+      trainNode0.timeline.push({
+        type: 'html-keyboard-response',
+        stimulus: function () { return generateScaledHTML('<p>Press the "Z" key to move on to the next phase, or the "M" key if you would like to practice again.</p>') },
+        choices: ['z', 'm']
+      });
+
+      timelineTraining.push(trainNode0);
+
+      let trainNode1 = {
+        timeline: [],
+        loop_function: function (data) {
+          let lastTrial = jsPsych.data.get().last(1).values()[0];
+          return lastTrial.response == "m"
+        }
+      }
+
+      trainNode1.timeline.push({
+        type: 'html-keyboard-response',
+        stimulus: function () {
+          return generateScaledHTML('<p>We will now add a time limit to the previous task.</p>' +
+            '<p>Your task is still to identify the sideways "T" and then report the direction it is rotated.</p>' +
+            '<p>Try to complete the task as fast and as accurate as possible.</p>' +
+            '</br>' +
+            '<p>Press either "Z" or "M" on the keyboard to continue.</p>')
+        },
+        choices: ['z', 'm']
+      });
+
+      for (let i = 2; i < 4; i++) {
+        trainNode1.timeline.push({
+          type: 'html-keyboard-response',
+          stimulus: function () {
+            return generateScaledHTML(
+              `<p style="font-size: 80px;">+</p>`
+            )
+          },
+          trial_duration: function () {
+            return shuffle([400, 450, 500, 550, 600]).splice(0, 1)[0]
+          },
+          choices: jsPsych.NO_KEYS
+        }, {
+          type: 'html-keyboard-response',
+          stimulus: '',
+          trial_duration: 150,
+          choices: jsPsych.NO_KEYS
+        }, {
+          type: 'html-keyboard-response',
+          stimulus: function () {
+            return generateStimulus(trainConditions[i].stim, trainConditions[i].rotations)
+          },
+          trial_duration: 2050,
+          on_load: function () {
+            document.getElementById("jspsych-html-keyboard-response-stimulus").style.minWidth = 900;
+            setTimeout(() => { document.getElementById("obfuscator").style.visibility = "hidden" }, 50)
+          },
+          choices: ["z", "m"]
+        }, {
+          type: 'html-keyboard-response',
+          stimulus: function () {
+            let lastTrial = jsPsych.data.get().last(1).values()[0];
+            if (lastTrial.rt == null) {
+              return generateScaledHTML(`<p style="font-size: 60px;">TOO SLOW</p>`)
+            } else if (lastTrial.response !== trainConditions[i].answer) {
+              return generateScaledHTML(`<p style="font-size: 60px;">INCORRECT</p>`)
+            } else {
+              return generateScaledHTML(`<p style="font-size: 60px;">CORRECT</p>`)
+            }
+          },
+          trial_duration: function () {
+            let lastTrial = jsPsych.data.get().last(1).values()[0];
+            if (lastTrial.rt == null) {
+              return 1200
+            } else if (lastTrial.response !== trainConditions[i].answer) {
+              return 1200
+            } else {
+              return 1200
+            }
+          },
+          choices: jsPsych.NO_KEYS
+        }, {
+          type: 'html-keyboard-response',
+          stimulus: '',
+          choices: jsPsych.NO_KEYS,
+          trial_duration: function () {
+            return shuffle([500, 550, 600, 650, 700]).splice(0, 1)[0]
+          }
+        });
+      }
+
+      trainNode1.timeline.push({
+        type: 'html-keyboard-response',
+        stimulus: function () { return generateScaledHTML('<p>Press the "Z" key to move on to the next phase, or the "M" key if you would like to practice again.</p>') },
+        choices: ['z', 'm']
+      });
+
+      timelineTraining.push(trainNode1);
+
+      timelineTraining.push({
+        type: 'html-keyboard-response',
+        stimulus: function () {
+          return generateScaledHTML('<p>Good job!</p>' +
+            '<p>Press either the "Z" or "M" key to continue on to the next phase.</p>')
+        },
+        choices: ["z", "m"]
+      });
+
+      timelineTraining.push({
+        type: 'html-keyboard-response',
+        stimulus: function () {
+          return generateScaledHTML('<p>Test starting in 2 seconds...</p>' +
+            '<p>Get your hands in position!</p>')
+        },
+        choices: jsPsych.NO_KEYS,
+        trial_duration: 2000
+      });
+
+      // Testing phase
+      for (let i = 0; i < numTrials; i++) {
+
+        if ([96, 192, 288].includes(i)) {
+          timelineTest.push(breakStart, breakEnd)
+        }
+
+        timelineTest.push({
+          type: 'html-keyboard-response',
+          stimulus: function () {
+            return generateScaledHTML(
+              `<p style="font-size: 80px;">+</p>`
+            )
+          },
+          trial_duration: function () {
+            return shuffle([400, 450, 500, 550, 600]).splice(0, 1)[0]
+          },
+          choices: jsPsych.NO_KEYS
+        });
+
+        timelineTest.push({
+          type: 'html-keyboard-response',
+          stimulus: '',
+          trial_duration: 200,
+          choices: jsPsych.NO_KEYS
+        });
+
+        timelineTest.push({
+          type: 'html-keyboard-response',
+          stimulus: '',
+          trial_duration: 150,
+          choices: jsPsych.NO_KEYS
+        });
+        timelineTest.push({
+          type: 'html-keyboard-response',
+          stimulus: function () {
+            return generateStimulus(trialConditions[i].stim, trialConditions[i].rotations)
+          },
+          trial_duration: 2050,
+          on_load: function () {
+            document.getElementById("jspsych-html-keyboard-response-stimulus").style.minWidth = 900;
+            setTimeout(() => { document.getElementById("obfuscator").style.visibility = "hidden" }, 50)
+          },
+          on_finish: function (data) {
+            data.targetSide = function () {
+              if (trialConditions[i].answer == "z") {
+                return "left"
+              } else {
+                return "right"
+              }
+            }();
+            data.stimulus = "";
+            data.category = trialConditions[i].category;
+            data.save = true;
+            data.test = "stimulus";
+            data.accuracy = function () {
+              let lastTrial = jsPsych.data.get().last(1).values()[0];
+              if (lastTrial.answer == data.response) {
+                return "correct"
+              } else {
+                return "incorrect"
+              }
+            }();
+          },
+          choices: ["z", "m"]
+        });
+
+        timelineTest.push({
+          type: 'html-keyboard-response',
+          stimulus: function () {
+            let lastTrial = jsPsych.data.get().last(1).values()[0];
+            if (lastTrial.rt == null) {
+              return generateScaledHTML(`<p style="font-size: 60px;">TOO SLOW</p>`)
+            } else if (lastTrial.response !== trialConditions[i].answer) {
+              return generateScaledHTML(`<p style="font-size: 60px;">INCORRECT</p>`)
+            } else {
+              return ''
+            }
+          },
+          trial_duration: function () {
+            let lastTrial = jsPsych.data.get().last(1).values()[0];
+            if (lastTrial.rt == null) {
+              return 1200
+            } else if (lastTrial.response !== trialConditions[i].answer) {
+              return 1200
+            } else {
+              return 0
+            }
+          },
+          choices: jsPsych.NO_KEYS
+        });
+
+        timelineTest.push({
+          type: 'html-keyboard-response',
+          stimulus: '',
+          choices: jsPsych.NO_KEYS,
+          trial_duration: function () {
+            return shuffle([500, 550, 600, 650, 700]).splice(0, 1)[0]
+          }
+        })
+      }
+
+      timelineOutro.push({
+        type: 'html-button-response',
+        stimulus: `<p style="font-size: 30px;">DO NOT EXIT OR LEAVE YOUR BROWSER YET, READ AND CONTINUE TO GET CREDIT</p>` +
+          '<div style="position: relative; margin: auto; width: 800px; height: 500px; background-color:white; overflow: scroll;text-align: left;">' +
+          '<p>The study you were a part of was to investigate blah blah blah typically debriefing stuff.</p>' +
+          '<p></p>' +
+          '<p>We have lots of people participating in this study and we hope you refrain from saying anything about the study to anyone else. Do you have any questions, comments, or suggestions? Please let the experimenter know or email m4liao@tamu.edu</p>',
+        choices: ['CONTINUE'],
+        button_html: ['<button class="jspsych-btn-agree">%choice%</button>'],
+        margin_vertical: '20px',
+        /* on_finish: function () {
+          creditToken += ""
+          creditToken += surveyCode;
+        } */
+      });
+
+      timelineOutro.push({
+        type: 'html-button-response',
+        choices: ['CLICK HERE'],
+        stimulus: 'Thank you for your participation!',
+        button_html: function () {
+          return `<a class="jspsych-btn-agree" type="button" onclick="window.open('${creditToken}', '_blank')">CLICK HERE TO RECEIVE CREDIT</a>`
+        },
+        margin_vertical: '20px'
+      });
+
+      // Combine all timelines
+      timeline = timeline.concat(timelineIntro);
+      timeline = timeline.concat(timelineTraining);
+      timeline = timeline.concat(timelineTest);
+      timeline = timeline.concat(timelineOutro);
+
+      // END EXPERIMENT CONSTRUCTION
+
+      // Initialize experiment
+      if (typeof (jatos) == "undefined") { // if local instance
+        jsPsych.init({
+          timeline: timeline,
+          on_finish: function () {
+            jsPsych.data.displayData();
+          }
+        });
+      } else {
+        jatos.onLoad(function () { // if server instance
+          surveyCode = jatos.urlQueryParameters.survey_id;
+          jsPsych.init({
+            timeline: timeline,
+            /* on_finish: function () {
+              let results = JSON.parse(jsPsych.data.get().json());
+              let filteredResults = results.filter(data => data.save === true);
+              let resultJson = JSON.stringify(filteredResults);
+              jatos.submitResultData(resultJson, jatos.startNextComponent);
+            } */
+          });
+        });
+      }
+    })();
+  </script>
+</body>
+
+</html>
