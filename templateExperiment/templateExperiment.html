@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="dist/jspsych.js"></script>
+    <script src="dist/plugin-html-keyboard-response.js"></script>
+    <link rel="stylesheet" href="dist/templateExperiment.css">
+</head>
+
+<body></body>
+<script>
+    // // // initialize variables // // //
+    var jsPsych = initJsPsych({
+        on_finish: function () {
+            jsPsych.data.displayData();
+            // var resultJson = jsPsych.data.get().json();
+            var all_data = jsPsych.data.get();
+            console.log(all_data.csv());
+            console.log(all_data.json());
+            // console.log(resultJson);
+        }
+    });
+    // size of the shapes //
+    var target_size = [80, 80];
+    // size of the imaginary circle to overlay elements on //
+    var circle_diameter = 400;
+    // size of the dots that appear on each shape //
+    var dot_size = target_size[0] / 10;
+    // degree of offset for how elements are displayed //
+    var offset = 0;
+    // size of the main div element to draw on //
+    var screenSize = 800;
+    
+    // // sets the center of the main div element
+    var center = [screenSize/2,screenSize/2];
+
+    // // // helper functions // // //
+    // // function that fill mxn matrix with zeros
+    function zeros(m,n) {
+        return Array.from({
+            length: m
+        }, 
+        () => new Array(n).fill(0));
+    }
+    // // function that fills mxn matrix with ones
+    function ones(m,n) {
+        return Array.from({
+            length: m
+        },
+        () => new Array(n).fill(1));
+    }
+    // // shuffle function (similar to PTB)
+    // // Durstenfeld Shuffle (optimized Fisher-Yates)
+    const shuffle = (array) => {
+        let currentIndex = array.length,
+            randomIndex;
+        while (currentIndex != 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        }
+        return array;
+    }
+    // // generates coordinates for the shapes to be drawn
+    function generateLocCoords(n_locs) {
+        var loc_coords = [];
+        var deg = [];
+        for (var i = 0; i < n_locs; i++) {
+            deg.push([
+                360 / n_locs * (i + 1)
+            ])
+        }
+        for (var i = 0; i < n_locs; i++) {
+            loc_coords.push([
+                center[0] + (circle_diameter / 2 * Math.cos((deg[i] - offset) * Math.PI / 180)) - target_size[0] / 2,
+                center[1] + (circle_diameter / 2 * Math.sin((deg[i] - offset) * Math.PI / 180)) - target_size[1] / 2
+            ])
+        }
+        return loc_coords;
+    }
+    // // generates coordinates for the targets to be drawn
+    function generateDotCoords(n_locs) {
+        var dot_coords = [];
+        var deg = [];
+        for (var i = 0; i < n_locs; i++) {
+            deg.push([
+                360 / n_locs * (i + 1)
+            ])
+        }
+        for (var i = 0; i < n_locs; i++) {
+            dot_coords.push([
+                center[0] + (circle_diameter / 2 * Math.cos((deg[i] - offset) * Math.PI / 180)) - target_size[0] / 2 + dot_size,
+                center[0] + (circle_diameter / 2 * Math.cos((deg[i] - offset) * Math.PI / 180)) + target_size[0] / 2 - dot_size*2,
+                center[1] + (circle_diameter / 2 * Math.sin((deg[i] - offset) * Math.PI / 180)) - dot_size/2
+            ])
+        }
+        return dot_coords;
+    }
+
+    // // create empty condition log
+    var conditionLog = [];
+    // // columns 1-6 correspond to the positions on the search display
+    // // [neutral(0) target (1) distractor(2)]
+    // // the logs can be changed depending on experiment conditions
+    var conditionLogBlockDistractorAbsent = [
+      [1, 0, 0, 0, 0, 0],
+      [0, 1, 0, 0, 0, 0],
+      [0, 0, 1, 0, 0, 0],
+      [0, 0, 0, 1, 0, 0],
+      [0, 0, 0, 0, 1, 0],
+      [0, 0, 0, 0, 0, 1]
+    ];
+    var conditionLogBlockDistractorPresent = [
+      [1, 2, 0, 0, 0, 0],
+      [1, 0, 2, 0, 0, 0],
+      [1, 0, 0, 2, 0, 0],
+      [1, 0, 0, 0, 2, 0],
+      [1, 0, 0, 0, 0, 2],
+      [2, 1, 0, 0, 0, 0],
+      [0, 1, 2, 0, 0, 0],
+      [0, 1, 0, 2, 0, 0],
+      [0, 1, 0, 0, 2, 0],
+      [0, 1, 0, 0, 0, 2],
+      [2, 0, 1, 0, 0, 0],
+      [0, 2, 1, 0, 0, 0],
+      [0, 0, 1, 2, 0, 0],
+      [0, 0, 1, 0, 2, 0],
+      [0, 0, 1, 0, 0, 2],
+      [2, 0, 0, 1, 0, 0],
+      [0, 2, 0, 1, 0, 0],
+      [0, 0, 2, 1, 0, 0],
+      [0, 0, 0, 1, 2, 0],
+      [0, 0, 0, 1, 0, 2],
+      [2, 0, 0, 0, 1, 0],
+      [0, 2, 0, 0, 1, 0],
+      [0, 0, 2, 0, 1, 0],
+      [0, 0, 0, 2, 1, 0],
+      [0, 0, 0, 0, 1, 2],
+      [2, 0, 0, 0, 0, 1],
+      [0, 2, 0, 0, 0, 1],
+      [0, 0, 2, 0, 0, 1],
+      [0, 0, 0, 2, 0, 1],
+      [0, 0, 0, 0, 2, 1]
+    ];
+    // // combine distractor present and absent blocks
+    conditionLog = conditionLog.concat(
+        conditionLogBlockDistractorAbsent,
+        conditionLogBlockDistractorPresent
+    );
+    // // Define trial type
+    // // [diamond target(0), circle target(1)]
+    var trialLog = []
+    for (i = 0; i < conditionLog.length / 2; i++) {
+      trialLog.push(1)
+      trialLog.push(0);
+    };
+    // // shuffle the order of both
+    shuffle(trialLog);
+    shuffle(conditionLog);
+    // // dot side on the target - counterbalanced
+    var dotTargetLog = [];
+    for (v = 0; v < (conditionLog.length/2); v++) {
+        dotTargetLog.push(1)
+        dotTargetLog.push(0)
+    };
+    // // shuffle the order
+    shuffle(dotTargetLog);
+    // // Create array containing correct answer on every trial
+    dotTargetKeycodeLog = zeros(conditionLog.length, 1)
+    for (i = 0; i < conditionLog.length; i++) {
+      if (dotTargetLog[i] == 0) {
+        dotTargetKeycodeLog[i] = "z"
+      } else if (dotTargetLog[i] == 1) {
+        dotTargetKeycodeLog[i] = "m"
+      };
+    };
+    
+    // // conditions for every aspect of the trial
+    const experimentLog = [];
+    for (let i = 0; i < conditionLog.length; i++){
+        let trialCondition = {};
+        // // set the shapes of target and nontargets
+        if (trialLog[i] === 1) {
+            trialCondition.targetShape = "diamond";
+        } else {
+            trialCondition.targetShape = "circle";
+        }
+        // // set the target shape position
+        trialCondition.targetLocation = conditionLog[i].indexOf(1);
+        // // set the distractor shape position
+        trialCondition.distractorLocation = conditionLog[i].indexOf(2);
+        // // if there is a distractor, give it a color
+        if (conditionLog[i].indexOf(2) != -1) {
+            trialCondition.distractorColor = shuffle(["blue", "green", "red"])[0];
+        } else {
+            trialCondition.distractorColor = "gray";
+        }
+        // // randomly assign a dot side to the shapes
+        // // cannot all be on the same side
+        const dotArray = shuffle(["left","left","left","right","right","right"]);
+        // // replace the target dot side with what is in the log
+        // trialCondition.dotSide = dotArray;
+        if (dotTargetLog[i] === 0) {
+            dotArray[trialCondition.targetLocation] = "left";
+        } else {
+            dotArray[trialCondition.targetLocation] = "right";
+        }
+        trialCondition.dotSide = dotArray;
+        // // push info for trial i into experimentLog
+        experimentLog.push(trialCondition);
+    };
+    // // run the function to get coordinates for the shapes
+    tempPos = generateLocCoords(conditionLog[0].length);
+    // // run the function to get coordinates for the dots
+    tempPos2 = generateDotCoords(conditionLog[0].length);
+    // // function to create the search display
+    const generateStimulus = (conditions) => {
+        // div element to draw on
+        let trialStimulus = `<div style ="position: relative; height: ${screenSize}px; width: ${screenSize}px; background-color: black;">`;
+        // on trials where the target shape is a diamond
+        if (conditions.targetShape === "diamond") {
+            for (let i = 0; i < conditionLog[i].length; i++) {
+                trialStimulus +=
+                    `<div style="position: absolute; width: ${target_size[0]}px; height: ${target_size[1]}px; left: ${tempPos[i][0]}px; top: ${tempPos[i][1]}px; background-color: gray;`
+                if (i === conditions.targetLocation) {
+                    trialStimulus += `transform: rotate(45deg);`
+                } else {
+                    trialStimulus += `border-radius: 200px; transform: scale(1.2);`
+                }
+                if (i === conditions.distractorLocation) {
+                    trialStimulus += `background-color: ${conditions.distractorColor};`
+                }
+                trialStimulus += `"></div>`
+            }
+        // on trials where the target shape is a circle
+        } else {
+            for (let i = 0; i < conditionLog[i].length; i++) {
+                trialStimulus +=
+                    `<div style="position: absolute; width: ${target_size[0]}px; height: ${target_size[1]}px; left: ${tempPos[i][0]}px; top: ${tempPos[i][1]}px; background-color: gray;`
+                if (i === conditions.targetLocation) {
+                    trialStimulus += `border-radius: 200px; transform: scale(1.2);`
+                } else {
+                    trialStimulus += `transform: rotate(45deg); `
+                }
+                if (i === conditions.distractorLocation) {
+                    trialStimulus += `background-color: ${conditions.distractorColor};`
+                }
+                trialStimulus += `"></div>`
+            }
+        }
+        // draw on the dots based on the log
+        for (let i = 0; i < conditionLog[i].length; i++) {
+            trialStimulus += `<div style="position: absolute; width: ${dot_size}px; height: ${dot_size}px; background-color: white; top: ${tempPos2[i][2]}px;`
+            if (conditions.dotSide[i] === "left") {
+                trialStimulus += `left: ${tempPos2[i][0]}px; `
+            }
+            else {
+                trialStimulus += `left: ${tempPos2[i][1]}px; `
+            }
+            trialStimulus += `"></div>`
+        }
+        trialStimulus += `</div>`
+        console.log(trialStimulus);
+        return trialStimulus
+    }
+    const timeline = [];
+    // loop through conditionLog to complete every trial
+    conditionLog.forEach((row, index) => {
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: '<div style="font-size:100px; color: white;">+</div>',
+            choices: "NO_KEYS",
+            trial_duration: function () {
+                return jsPsych.randomization.sampleWithoutReplacement([800, 750, 700, 650, 600], 1)[0]; // 600-800ms
+            },
+            data: { test_part: 'fixation' }
+        })
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: generateStimulus(experimentLog[index]),
+            choices: ['z','m'],
+            trial_duration: 2000,
+            data: { test_part: 'test', correct_response: dotTargetKeycodeLog[index]},
+        })
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: function () {
+                var lastResponse = jsPsych.data.get().last(1).values()[0];
+                if (lastResponse.rt == null) { // Check if timeout
+                    return `<p style="font-size: xx-large">TOO SLOW</p>`;
+                } else if (lastResponse.response != lastResponse.correct_response) { // Check if incorrect
+                    return `<p style="font-size: xx-large">INCORRECT</p>`;
+                } else {
+                    return `<p style="font-size: xx-large">CORRECT</p>`;
+                }
+            },
+            choices: "NO_KEYS",
+            trial_duration: 1500,
+            data: { test_part: 'feedback' },
+            post_trial_gap: 1000
+        })
+    })
+    
+    jsPsych.run(timeline);
+    /*
+    // generates coordinates for lines to be drawn on the shapes that make up the search display
+    function generateLineCoords(n_locs) {
+        var lineCoord = [];
+        var deg = [];
+        for (var i = 0; i < n_locs; i++) {
+            deg.push([
+                360 / n_locs*(i+1)
+            ])
+        }
+        for (var i = 0; i < n_locs; i++) {
+            lineCoord.push([
+                center[0] + (circle_diameter / 2 * Math.cos((deg[i] - offset) * Math.PI / 180)) - line_size[0]/2,
+                center[1] + (circle_diameter / 2 * Math.sin((deg[i] - offset) * Math.PI / 180)) - line_size[1]/2
+            ])
+        }
+        return lineCoord;
+    }
+    // to retrieve the coordinates for the lines
+    linePos = generateLineCoords(conditionLog[0].length);
+    // add the below to generateStimulus() where the function generates code for dot side
+    // before this below code snippet works, you need to push lineOrientation into experimentData (similar to what was done with dot side)
+    // the code snippet below only has 45 degree rotations to the left and right, but they can be literally anything (e.g., target is horizontal/vertical line)
+    for (let i = 0; i < conditionLog[0].length; i++) {
+            trialStimulus += `<div style="position: absolute; width: ${line_size[0]}px; height: ${line_size[1]}px; background-color: white; left: ${linePos[i][0]}px; top: ${linePos[i][1]}px;`
+            if (experimentData[i]["lineOrientation"] === 1) {
+                trialStimulus += `transform: rotate(45deg); `
+            }
+            else {
+                trialStimulus += `transform: rotate(-45deg); `
+            }
+            trialStimulus += `"></div>`
+        }
+        trialStimulus += `</div>`
+        return trialStimulus
+    */
+</script>
+
+</html>
